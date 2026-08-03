@@ -1,8 +1,8 @@
 import { MODULE_ID } from "../settings.mjs";
 
-/** Opt-in, meant for the TV-casting source device, not the TV or the phone
- * (see DESIGN.md §0 decisions). Browsers release wake locks when a tab is
- * backgrounded, so it's re-acquired on visibilitychange. */
+/** Opt-in, meant for the TV-casting source device, not the TV or the phone.
+ * Browsers release wake locks when a tab is backgrounded, so it's
+ * re-acquired on visibilitychange. */
 export function initWakeLock() {
   if (!("wakeLock" in navigator)) return;
   if (!game.settings.get(MODULE_ID, "keepAwake")) return;

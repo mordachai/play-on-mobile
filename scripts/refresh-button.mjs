@@ -31,7 +31,6 @@ export function initRefreshButton() {
     cursor: "pointer",
     touchAction: "manipulation",
   });
-  setRefreshButtonSide(game.settings.get(MODULE_ID, "companionHandedness"));
   btn.addEventListener("mouseenter", () => (btn.style.opacity = "1"));
   btn.addEventListener("mouseleave", () => (btn.style.opacity = "0.7"));
 
@@ -42,6 +41,9 @@ export function initRefreshButton() {
   });
 
   document.body.appendChild(btn);
+  // Must run after appendChild — setRefreshButtonSide looks the button up by
+  // ID, which only exists in the DOM once appended.
+  setRefreshButtonSide(game.settings.get(MODULE_ID, "companionHandedness"));
 }
 
 /** Opposite corner from the dock, same reasoning as the pan nib (pan-nib.mjs).

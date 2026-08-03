@@ -2,7 +2,7 @@
  * Adapter for the "vagabond" system. Never reimplements rules/dice — every roll
  * or item use calls straight into vagabond's own RollHandler/SpellHandler/Item
  * methods, the same ones the system's own sheet and character-hud.mjs use, so
- * results/chat cards are identical to using the real sheet. See DESIGN.md §5a/§6.
+ * results/chat cards are identical to using the real sheet.
  *
  * Sheet layout (stats/skills/saves/equipped/inventory/magic/traits/features/
  * perks split) mirrors what was actually asked for, grounded against the real

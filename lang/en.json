@@ -1,8 +1,8 @@
 {
   "PLAYONMOBILE.Settings.CompanionMode.Name": "Companion Mode (Phone)",
   "PLAYONMOBILE.Settings.CompanionMode.Hint": "Replace the normal Foundry UI on this browser session with a simplified touch-friendly sheet. Intended for a phone with no canvas. Only affects this client — other players are unaffected.",
-  "PLAYONMOBILE.Settings.KeepAwake.Name": "Keep Screen Awake (TV source device)",
-  "PLAYONMOBILE.Settings.KeepAwake.Hint": "Request a wake lock on this device so its screen doesn't sleep. Use this on the device casting to the TV, not on the TV itself.",
+  "PLAYONMOBILE.Settings.KeepAwake.Name": "Keep Screen Awake",
+  "PLAYONMOBILE.Settings.KeepAwake.Hint": "Request a wake lock on this device so its screen doesn't sleep during play. Enable on your phone.",
   "PLAYONMOBILE.Settings.Handedness.Name": "Companion Panel Handedness",
   "PLAYONMOBILE.Settings.Handedness.Hint": "Landscape only: which edge the dock and its tab sit on, and which hand's thumb drives it. The pan nib always lands on the opposite edge.",
   "PLAYONMOBILE.Settings.Handedness.Right": "Right-handed (dock on right)",

@@ -2,7 +2,7 @@
  * Caches only this module's own static assets (CSS/templates/icons/manifest)
  * for faster reload. Deliberately never caches or offline-serves anything
  * else — world/document data must always come from the live server, so the
- * companion app never presents stale game state as current. See DESIGN.md §5.
+ * companion app never presents stale game state as current.
  */
 
 const CACHE_NAME = "play-on-mobile-static-v2";

@@ -108,7 +108,7 @@ function moveTowardSpeedLimited(token, worldTarget) {
   const newCx = cx + dx * ratio;
   const newCy = cy + dy * ratio;
 
-  // Raw, collision-less update — documented MVP limitation, see DESIGN.md §7 risk 1.
+  // Raw, collision-less update — documented MVP limitation.
   return doc.update({ x: newCx - (doc.width * size) / 2, y: newCy - (doc.height * size) / 2 });
 }
 

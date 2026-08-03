@@ -3,7 +3,7 @@
   "title": "Play on Mobile",
   "version": "0.1.0",
   "compatibility": {
-    "minimum": "13",
+    "minimum": "14",
     "verified": "14"
   },
   "authors": [
@@ -23,6 +23,11 @@
       "lang": "en",
       "name": "English",
       "path": "lang/en.json"
+    },
+    {
+      "lang": "pt-BR",
+      "name": "Português (Brasil)",
+      "path": "lang/pt-BR.json"
     }
   ],
   "relationships": {
@@ -36,5 +41,8 @@
   },
   "socket": true,
   "flags": {},
-  "description": "A phone-friendly companion view of the canvas: simplified system-agnostic sheet (tap-to-roll, token list, target list, movement d-pad) docked alongside a live, touch-pannable map. First-class support for the vagabond system; other systems get a generic read-only fallback."
+  "description": "A phone-friendly companion view of the canvas: simplified system-agnostic sheet (tap-to-roll, tap-to-move, double-tap-to-target) docked alongside a live, touch-pannable map. First-class support for the vagabond system; other systems get a generic read-only fallback.",
+  "url": "https://github.com/mordachai/play-on-mobile",
+  "manifest": "https://github.com/mordachai/play-on-mobile/releases/latest/download/module.json",
+  "download": "https://github.com/mordachai/play-on-mobile/releases/download/v0.1.0/module.zip"
 }

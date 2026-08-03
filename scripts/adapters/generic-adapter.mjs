@@ -1,8 +1,8 @@
 /**
  * Fallback adapter for any system other than vagabond. Stub only — read-only
  * flattened data plus a raw-formula roll box, just enough that companion mode
- * doesn't hard-fail on an unsupported system. Not polished this round (see
- * DESIGN.md §6 Phase 4, explicitly out of scope for now).
+ * doesn't hard-fail on an unsupported system. Not polished this round —
+ * explicitly out of scope for now.
  */
 export const GenericAdapter = {
   id: "generic",
