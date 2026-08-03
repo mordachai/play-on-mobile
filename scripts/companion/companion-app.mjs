@@ -33,12 +33,9 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     actions: {
       pickActor: PhoneCompanionApp._onPickActor,
       switchTab: PhoneCompanionApp._onSwitchTab,
-      resourceDelta: PhoneCompanionApp._onResourceDelta,
-      checkRoll: PhoneCompanionApp._onCheckRoll,
-      weaponRoll: PhoneCompanionApp._onWeaponRoll,
-      spellCast: PhoneCompanionApp._onSpellCast,
-      itemUse: PhoneCompanionApp._onItemUse,
-      itemAction: PhoneCompanionApp._onItemAction,
+      entryPress: PhoneCompanionApp._onEntryPress,
+      entryDelta: PhoneCompanionApp._onEntryDelta,
+      entryAction: PhoneCompanionApp._onEntryAction,
       rawRoll: PhoneCompanionApp._onRawRoll,
       togglePanel: PhoneCompanionApp._onTogglePanel,
       toggleAccordion: PhoneCompanionApp._onToggleAccordion,
@@ -51,6 +48,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       setThemeStyle: PhoneCompanionApp._onSetThemeStyle,
       setHandedness: PhoneCompanionApp._onSetHandedness,
       toggleNib: PhoneCompanionApp._onToggleNib,
+      toggleFastRolls: PhoneCompanionApp._onToggleFastRolls,
       toggleForeignSetting: PhoneCompanionApp._onToggleForeignSetting,
       openSettingsMenu: PhoneCompanionApp._onOpenSettingsMenu,
     },
@@ -141,31 +139,39 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
         ? { ...buildAudioData(), volumeControls: buildVolumeControls() }
         : { playlists: [], volumeControls: [] };
 
-    for (const r of sheetData.resources ?? []) {
-      r.pct = r.max ? Math.round((100 * Math.max(0, r.value ?? 0)) / r.max) : 0;
-    }
-    if (sheetData.luck?.max) {
-      sheetData.luck.pct = Math.round((100 * Math.max(0, sheetData.luck.value ?? 0)) / sheetData.luck.max);
-    }
-    for (const list of [
-      sheetData.traits,
-      sheetData.features,
-      sheetData.perks,
-      sheetData.equipped,
-      sheetData.inventory,
-      sheetData.magic,
-      sheetData.spells,
-    ]) {
-      for (const entry of list ?? []) entry.open = this._expandedAccordions.has(entry.id);
-    }
+    // Normalizes whatever `sections` the active adapter (hand-written JS
+    // today, JSON descriptor from Phase C on) produced into what the generic
+    // template needs: accordion open/closed state (namespaced `sectionId:
+    // entryId` so ids from different sections never collide), the header-
+    // reveal gate for stat-row, and a render-type flag per section so the
+    // template can branch without a Handlebars string-equality helper. This
+    // is the one place in the module that still needs to enumerate the six
+    // renderer names — see docs/system-adapters-plan.md §5.6.
+    const sections = (sheetData.sections ?? [])
+      .filter((s) => s.hideIfEmpty === false || (s.entries?.length ?? 0) > 0)
+      .map((s) => {
+        const isItemList = s.render === "item-list";
+        const isEntryList = s.render === "entry-list";
+        for (const entry of s.entries ?? []) {
+          if (isItemList || isEntryList) entry.open = this._expandedAccordions.has(`${s.id}:${entry.id}`);
+        }
+        return {
+          ...s,
+          open: isItemList && s.collapsible ? this._expandedAccordions.has(s.id) : undefined,
+          visible: s.revealWith === "header" ? this._expandedAccordions.has("name") : true,
+          isStatRow: s.render === "stat-row",
+          isResources: s.render === "resources",
+          isCheckGrid: s.render === "check-grid",
+          isItemList,
+          isEntryList,
+        };
+      });
 
-    this._data = { ...sheetData, ...chatData, ...journalData, ...audioData };
+    this._data = { ...sheetData, sections, ...chatData, ...journalData, ...audioData };
     return {
       ...this._data,
       activeTab: this._activeTab,
       nameExpanded: this._expandedAccordions.has("name"),
-      inventoryExpanded: this._expandedAccordions.has("inventory"),
-      magicExpanded: this._expandedAccordions.has("magic"),
       tabs: {
         sheet: this._activeTab === "sheet",
         chat: this._activeTab === "chat",
@@ -193,6 +199,11 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       })),
       nibEnabled: game.settings.get(MODULE_ID, "panNibEnabled"),
       nibSensitivity: game.settings.get(MODULE_ID, "panNibSensitivity"),
+      // Only meaningful for a system whose descriptor declares
+      // `fastForward` (see _onEntryPress) — shown regardless, since a
+      // toggle that quietly does nothing for the current system is more
+      // confusing than one that's always visible.
+      fastRolls: game.settings.get(MODULE_ID, "fastRolls"),
       // Also registered config:true (see settings.mjs) so it still shows in
       // Foundry's own Configure Settings menu for the GM — duplicated here,
       // not moved, so a mobile player (no sidebar access, see
@@ -264,8 +275,9 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       });
     }
 
-    for (const el of this.element.querySelectorAll("[data-longpress-source]")) {
-      this._attachLongPress(el, () => this._toggleAccordion(el.dataset.itemId), { suppressClick: true });
+    for (const el of this.element.querySelectorAll("[data-longpress-toggle]")) {
+      const { sectionId, entryId } = el.dataset;
+      this._attachLongPress(el, () => this._toggleAccordion(`${sectionId}:${entryId}`), { suppressClick: true });
     }
 
     if (this._activeTab === "audio") {
@@ -493,7 +505,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
 
   /** Timer-based long-press, shared by inventory/magic item rows and chat
    * messages. `suppressClick` marks the element so a caller-owned click
-   * handler (e.g. _onItemUse) can bail out when the touch was consumed by
+   * handler (e.g. _onEntryPress) can bail out when the touch was consumed by
    * the long-press instead of a tap. */
   _attachLongPress(el, onLongPress, { suppressClick = false } = {}) {
     let timer = null;
@@ -535,7 +547,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
   /** Shared by the toggleAccordion action (tap on a section/trait/item title)
    * and the inventory/magic/spells long-press (no title button there — the
    * item row itself doubles as the accordion trigger, tap still uses/casts
-   * it per _onItemUse's suppressClick handoff above). */
+   * it per _onEntryPress's suppressClick handoff above). */
   _toggleAccordion(id) {
     if (!id) return;
     if (this._expandedAccordions.has(id)) this._expandedAccordions.delete(id);
@@ -617,57 +629,56 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.render();
   }
 
-  static _onResourceDelta(_event, target) {
-    const key = target.dataset.key;
-    const delta = Number(target.dataset.delta);
-    if (key === "luck") {
-      this._data?.luck?.onDelta?.(delta);
-      return;
-    }
-    if (key === "xp") {
-      this._data?.onXpDelta?.(delta);
-      return;
-    }
-    const row = this._data?.resources?.find((r) => r.key === key);
-    row?.onDelta?.(delta);
-  }
-
-  static _onCheckRoll(_event, target) {
-    const key = target.dataset.key;
-    const source = target.dataset.source; // "saves" | "skills" | "attackSkills"
-    const row = this._data?.[source]?.find((c) => c.key === key);
-    row?.onPress?.();
-  }
-
-  static _onWeaponRoll(event, target) {
+  /** Fires on tap for every entry type (resources have no press, so this
+   * never applies to them) — check-grid rolls, item-list use/attack/cast,
+   * regardless of which system adapter produced the section. A long-press
+   * (item-list rows, see _attachLongPress wiring above) marks suppressClick
+   * so the trailing click the touch also fires doesn't double-activate.
+   *
+   * Fast Rolls (Settings tab): when on and the descriptor declares
+   * `fastForward.event`, a plain tap with no real modifier held gets that
+   * fast-forward mod substituted in — skipping a system's own roll-config
+   * dialog is the point of a one-tap mobile sheet. Actually holding
+   * shift/ctrl always wins over the substitution, matching desktop
+   * convention where a held modifier means "I want something different".
+   * Vagabond declares no fastForward (its own rolls never dialog in the
+   * first place), so this is a no-op for it today — it exists for systems
+   * whose own rolls do. */
+  static _onEntryPress(event, target) {
     if (target.dataset.suppressClick === "1") {
       delete target.dataset.suppressClick;
       return;
     }
-    const id = target.dataset.itemId;
-    const row = this._data?.equipped?.find((w) => w.id === id);
-    row?.onPress?.({ shiftKey: event.shiftKey, ctrlKey: event.ctrlKey });
+    const { sectionId, entryId } = target.dataset;
+    const section = this._data?.sections?.find((s) => s.id === sectionId);
+    const entry = section?.entries?.find((e) => e.id === entryId);
+
+    const held = event.shiftKey || event.ctrlKey;
+    const fastForward = this.adapter.descriptor?.fastForward?.event;
+    const mods =
+      !held && fastForward && game.settings.get(MODULE_ID, "fastRolls")
+        ? { shiftKey: false, ctrlKey: false, ...fastForward }
+        : { shiftKey: event.shiftKey, ctrlKey: event.ctrlKey };
+
+    entry?.onPress?.(mods);
   }
 
-  static _onSpellCast(_event, target) {
-    if (target.dataset.suppressClick === "1") {
-      delete target.dataset.suppressClick;
-      return;
-    }
-    const id = target.dataset.itemId;
-    const row = this._data?.spells?.find((s) => s.id === id);
-    row?.onPress?.();
+  static _onEntryDelta(_event, target) {
+    const { sectionId, entryId, delta } = target.dataset;
+    const section = this._data?.sections?.find((s) => s.id === sectionId);
+    const entry = section?.entries?.find((e) => e.id === entryId);
+    entry?.onDelta?.(Number(delta));
   }
 
-  static _onItemUse(_event, target) {
-    if (target.dataset.suppressClick === "1") {
-      delete target.dataset.suppressClick;
-      return;
-    }
-    const id = target.dataset.itemId;
-    const source = target.dataset.longpressSource ?? "inventory";
-    const row = this._data?.[source]?.find((i) => i.id === id);
-    row?.onPress?.();
+  /** Icon-row buttons inside an item's expanded accordion body (equipped,
+   * inventory, magic) — same Use/Send to Chat/Equip-Unequip/Bind/Edit/Delete
+   * set vagabond's own sheet shows on right-click, built per-item in the
+   * active adapter's item-list section. */
+  static _onEntryAction(_event, target) {
+    const { sectionId, entryId, actionIndex } = target.dataset;
+    const section = this._data?.sections?.find((s) => s.id === sectionId);
+    const entry = section?.entries?.find((e) => e.id === entryId);
+    entry?.actions?.[Number(actionIndex)]?.onSelect?.();
   }
 
   static _onRawRoll(_event, _target) {
@@ -693,18 +704,6 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
 
   static _onToggleAccordion(_event, target) {
     this._toggleAccordion(target.dataset.accordionId);
-  }
-
-  /** Icon-row buttons inside an item's expanded accordion body (equipped,
-   * inventory, magic) — same Use/Send to Chat/Equip-Unequip/Bind/Edit/Delete
-   * set vagabond's own sheet shows on right-click, built per-item in
-   * vagabond-adapter's buildItemActions(). */
-  static _onItemAction(_event, target) {
-    const id = target.dataset.itemId;
-    const source = target.dataset.itemSource;
-    const index = Number(target.dataset.actionIndex);
-    const row = this._data?.[source]?.find((i) => i.id === id);
-    row?.actions?.[index]?.onSelect?.();
   }
 
   static async _onSendChat(_event, target) {
@@ -757,6 +756,11 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     const next = !game.settings.get(MODULE_ID, "panNibEnabled");
     game.settings.set(MODULE_ID, "panNibEnabled", next);
     setPanNibEnabled(next);
+    this.render();
+  }
+
+  static _onToggleFastRolls(_event, _target) {
+    game.settings.set(MODULE_ID, "fastRolls", !game.settings.get(MODULE_ID, "fastRolls"));
     this.render();
   }
 

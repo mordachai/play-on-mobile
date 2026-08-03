@@ -1,0 +1,9 @@
+{
+  "name": "play-on-mobile",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "validate": "node tools/validate-manifest.mjs"
+  }
+}

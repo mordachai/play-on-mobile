@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mordachai/play-on-mobile/docs/descriptor.schema.json",
+  "title": "Play on Mobile system descriptor",
+  "description": "See docs/system-adapters-plan.md §5 for the authoritative field-by-field writeup. This schema documents shape and is intentionally loose around `invoke`/`where`/`actions`, which are validated more strictly by tools/validate-descriptor.mjs — anything requiring real conditionals belongs in invokeModule, not in stricter JSON Schema here.",
+  "type": "object",
+  "required": ["formatVersion", "system", "sections"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "system": { "type": "string", "minLength": 1 },
+    "label": { "type": "string" },
+    "invokeModule": { "type": "string" },
+    "snapshot": {
+      "type": "object",
+      "description": "Optional. Names an invokeModule export computed once per render and exposed to every expression as \"@snap.*\" — for systems whose own derived-data read (e.g. vagabond's VagabondActor.read()) unwraps/renames fields in ways plain @system paths can't express. See plan §5.2 and §7 Phase C.",
+      "required": ["custom"],
+      "properties": { "custom": { "type": "string" } }
+    },
+    "header": {
+      "type": "object",
+      "properties": {
+        "subtitle": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string", "description": "A bare expression, shown as-is." },
+              {
+                "type": "object",
+                "required": ["label", "value"],
+                "description": "A literal label plus a resolved value, e.g. {label:\"Level\", value:\"@snap.level\"} -> \"Level 3\".",
+                "properties": { "label": { "type": "string" }, "value": { "$ref": "#/$defs/expr" } }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "fastForward": {
+      "type": "object",
+      "properties": {
+        "event": { "type": "object" },
+        "options": { "type": "object" }
+      }
+    },
+    "dialogs": {
+      "type": "object",
+      "properties": {
+        "selfPositioned": { "type": "array", "items": { "type": "string" } },
+        "dragHandle": { "type": "object", "additionalProperties": { "type": "string" } },
+        "collapsePanel": { "type": "boolean" }
+      }
+    },
+    "sections": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/section" }
+    }
+  },
+  "$defs": {
+    "expr": { "type": "string", "description": "Literal string, or an @-prefixed expression — see plan §5.2." },
+    "where": {
+      "type": "object",
+      "description": "AND of comparators against the subject (item, or entry from a `source` iteration). See plan §5.3.",
+      "additionalProperties": true
+    },
+    "labelFrom": {
+      "type": "object",
+      "required": ["config"],
+      "properties": {
+        "config": { "type": "string" },
+        "field": { "type": "string" },
+        "localize": { "type": "boolean" }
+      }
+    },
+    "invoke": {
+      "type": "object",
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "enum": ["actorMethod", "itemMethod", "propMethod", "formula", "update", "sheetClick", "custom"]
+        },
+        "path": { "type": "string" },
+        "call": { "type": "string" },
+        "args": { "type": "array" },
+        "formula": { "type": "string" },
+        "flavor": { "type": "string" },
+        "target": { "enum": ["actor", "item"] },
+        "set": { "type": "object" },
+        "selector": { "type": "string" },
+        "fn": { "type": "string" },
+        "event": { "type": "object" },
+        "options": { "type": "object" }
+      }
+    },
+    "action": {
+      "oneOf": [
+        { "enum": ["use", "toChat", "edit", "delete"] },
+        {
+          "type": "object",
+          "required": ["action"],
+          "properties": {
+            "action": { "enum": ["toggle", "invoke"] },
+            "label": { "type": "string" },
+            "offLabel": { "type": "string" },
+            "icon": { "type": "string" },
+            "path": { "type": "string" },
+            "invoke": { "$ref": "#/$defs/invoke" }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["custom"],
+          "properties": { "custom": { "type": "string" } }
+        }
+      ]
+    },
+    "section": {
+      "type": "object",
+      "required": ["id", "render"],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "render": { "enum": ["resources", "stat-row", "check-grid", "item-list", "entry-list", "fields"] },
+        "collapsible": { "type": "boolean" },
+        "defaultOpen": { "type": "boolean" },
+        "hideIfEmpty": { "type": "boolean" },
+        "revealWith": { "enum": ["header"] },
+        "icon": { "$ref": "#/$defs/expr" },
+        "badge": {
+          "type": "object",
+          "properties": {
+            "label": { "type": "string" },
+            "value": { "$ref": "#/$defs/expr" },
+            "max": { "$ref": "#/$defs/expr" },
+            "when": { "$ref": "#/$defs/expr", "description": "If resolved falsy, no badge is shown at all (vagabond: Focus, only for classes that have a focus pool)." }
+          }
+        },
+        "source": { "$ref": "#/$defs/expr" },
+        "where": { "$ref": "#/$defs/where" },
+        "value": { "$ref": "#/$defs/expr" },
+        "abbr": { "$ref": "#/$defs/labelFrom" },
+        "labelFrom": { "$ref": "#/$defs/labelFrom" },
+        "invoke": { "$ref": "#/$defs/invoke" },
+        "qty": { "$ref": "#/$defs/expr" },
+        "description": { "$ref": "#/$defs/expr" },
+        "name": { "$ref": "#/$defs/expr" },
+        "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },
+        "entries": {
+          "type": "array",
+          "description": "resources renderer only — literal entry list, not a `source` iteration.",
+          "items": {
+            "type": "object",
+            "required": ["key", "value"],
+            "properties": {
+              "key": { "type": "string" },
+              "label": { "type": "string" },
+              "value": { "$ref": "#/$defs/expr" },
+              "max": { "$ref": "#/$defs/expr" },
+              "write": { "type": "string" },
+              "min": { "type": "number" },
+              "editable": { "type": "boolean" },
+              "when": {
+                "$ref": "#/$defs/expr",
+                "description": "If resolved falsy, this entry is omitted entirely (distinct from a value of 0) — e.g. vagabond's mana/luck pools, which not every actor has."
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

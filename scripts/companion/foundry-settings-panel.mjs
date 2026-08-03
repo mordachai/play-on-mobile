@@ -10,20 +10,7 @@
  * always visible (each user has their own copy); world-scope settings and
  * restricted menus are GM-only, matching core's behavior. */
 
-function resolveNamespaceTitle(namespace) {
-  if (namespace === "core") return "Core";
-  if (namespace === game.system.id) return game.system.title;
-  return game.modules.get(namespace)?.title ?? namespace;
-}
-
-function classifyField(entry) {
-  if (entry.type === Boolean) return "boolean";
-  if (entry.choices) return "select";
-  if (entry.range) return "range";
-  if (entry.type === Number) return "number";
-  if (entry.type === String) return "text";
-  return "readonly";
-}
+import { resolveNamespaceTitle, classifyField } from "../settings-field-utils.mjs";
 
 export function buildForeignSettingsGroups(expandedAccordions) {
   const groups = new Map();

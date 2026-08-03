@@ -31,5 +31,7 @@
   "PLAYONMOBILE.Companion.Settings.Handedness.left": "Left",
   "PLAYONMOBILE.Companion.Settings.NibEnabled": "Pan Nib",
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Pan Nib Sensitivity",
+  "PLAYONMOBILE.Companion.Settings.FastRolls": "Fast Rolls",
+  "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Skip a system's own roll-config dialog where possible. Only affects systems whose companion sheet declares a fast-forward shortcut.",
   "PLAYONMOBILE.Companion.UnsupportedSystem": "This system isn't specially supported yet. Showing raw data only."
 }

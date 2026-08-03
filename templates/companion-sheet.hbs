@@ -44,17 +44,21 @@
           </button>
           {{#if nameExpanded}}
           <div class="pom-name-details">
-            <span>Level {{level}}</span>
-            {{#if ancestryName}}<span>{{ancestryName}}</span>{{/if}}
-            {{#if className}}<span>{{className}}</span>{{/if}}
+            {{#each header.subtitle}}<span>{{this}}</span>{{/each}}
           </div>
           {{/if}}
         </div>
       </div>
 
-      {{#if nameExpanded}}
+      {{! Every remaining sheet region is one of six generic renderers (see
+          docs/system-adapters-plan.md §5.6) driven by the sections array a
+          system adapter builds — nothing below this point names vagabond. }}
+      {{#each sections}}
+      {{#if this.visible}}
+
+      {{#if this.isStatRow}}
       <div class="pom-stats-row">
-        {{#each stats}}
+        {{#each this.entries}}
         <div class="pom-stat">
           <span class="pom-stat-abbr">{{this.abbr}}</span>
           <span class="pom-stat-value">{{this.value}}</span>
@@ -63,214 +67,116 @@
       </div>
       {{/if}}
 
+      {{#if this.isResources}}
       <div class="pom-resource-substat-grid">
-        {{#each resources}}
+        {{#each this.entries}}
         <div class="pom-resource" data-key="{{this.key}}">
           <div class="pom-resource-label">{{this.label}}</div>
-          <div class="pom-resource-value">{{this.value}}/{{this.max}}</div>
+          <div class="pom-resource-value">{{#if this.max}}{{this.value}}/{{this.max}}{{else}}{{this.value}}{{/if}}</div>
           {{#if this.editable}}
           <div class="pom-resource-controls">
-            <button type="button" data-action="resourceDelta" data-key="{{this.key}}" data-delta="-1">&minus;</button>
-            <button type="button" data-action="resourceDelta" data-key="{{this.key}}" data-delta="1">+</button>
+            <button type="button" data-action="entryDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="-1">&minus;</button>
+            <button type="button" data-action="entryDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="1">+</button>
           </div>
           {{/if}}
         </div>
         {{/each}}
+      </div>
+      {{/if}}
 
-        <div class="pom-resource" data-key="speed">
-          <div class="pom-resource-label">Speed</div>
-          <div class="pom-resource-value">{{speed}}</div>
-        </div>
-        {{#if luck}}
-        <div class="pom-resource" data-key="luck">
-          <div class="pom-resource-label">Luck Pool</div>
-          <div class="pom-resource-value">{{luck.value}}/{{luck.max}}</div>
-          <div class="pom-resource-controls">
-            <button type="button" data-action="resourceDelta" data-key="luck" data-delta="-1">&minus;</button>
-            <button type="button" data-action="resourceDelta" data-key="luck" data-delta="1">+</button>
+      {{#if this.isCheckGrid}}
+      <h3 class="pom-section-label">{{this.label}}</h3>
+      <div class="{{this.cssClass}}">
+        {{#each this.entries}}
+        <button type="button" class="pom-check" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}">
+          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
+        </button>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      {{#if this.isItemList}}
+        {{#if this.collapsible}}
+        <h3 class="pom-section-label pom-accordion-section">
+          <button type="button" class="pom-section-trigger" data-action="toggleAccordion" data-accordion-id="{{this.id}}">
+            <span class="pom-section-trigger-label"><span class="pom-chevron">{{#if this.open}}&#9662;{{else}}&#9656;{{/if}}</span> {{this.label}}</span>
+            {{#if this.badge}}<span class="pom-section-slots">{{this.badge.value}}{{#if this.badge.max}}/{{this.badge.max}}{{/if}}</span>{{/if}}
+          </button>
+        </h3>
+        {{#if this.open}}
+        <div class="{{this.cssClass}}">
+          {{#each this.entries}}
+          <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
+            <button type="button" class="pom-list-item" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-longpress-toggle="1">
+              {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
+            </button>
+            {{#if this.open}}
+            <div class="pom-accordion-body pom-item-info">
+              {{#if this.actions.length}}
+              <div class="pom-item-actions">
+                {{#each this.actions}}
+                <button type="button" class="pom-item-action" data-action="entryAction" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
+                  <i class="{{this.icon}}"></i>
+                </button>
+                {{/each}}
+              </div>
+              {{/if}}
+              {{{this.description}}}
+            </div>
+            {{/if}}
           </div>
+          {{/each}}
         </div>
         {{/if}}
-        <div class="pom-resource" data-key="xp">
-          <div class="pom-resource-label">XP</div>
-          <div class="pom-resource-value">{{xp}}/{{xpRequired}}</div>
-          <div class="pom-resource-controls">
-            <button type="button" data-action="resourceDelta" data-key="xp" data-delta="-1">&minus;</button>
-            <button type="button" data-action="resourceDelta" data-key="xp" data-delta="1">+</button>
-          </div>
-        </div>
-      </div>
-
-      {{#if equipped.length}}
-      <h3 class="pom-section-label">Equipped</h3>
-      <div class="pom-grid-equipped">
-        {{#each equipped}}
-        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
-          <button type="button" class="pom-list-item" data-action="weaponRoll" data-item-id="{{this.id}}" data-longpress-source="equipped">
-            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>
-          </button>
-          {{#if this.open}}
-          <div class="pom-accordion-body pom-item-info">
-            <div class="pom-item-actions">
-              {{#each this.actions}}
-              <button type="button" class="pom-item-action" data-action="itemAction" data-item-id="{{../id}}" data-item-source="equipped" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
-                <i class="{{this.icon}}"></i>
-              </button>
-              {{/each}}
+        {{else}}
+        <h3 class="pom-section-label">
+          {{this.label}}
+          {{#if this.badge}}<span class="pom-section-sub">{{this.badge.label}} {{this.badge.value}}{{#if this.badge.max}}/{{this.badge.max}}{{/if}}</span>{{/if}}
+        </h3>
+        <div class="{{this.cssClass}}">
+          {{#each this.entries}}
+          <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
+            <button type="button" class="pom-list-item" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-longpress-toggle="1">
+              {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
+            </button>
+            {{#if this.open}}
+            <div class="pom-accordion-body pom-item-info">
+              {{#if this.actions.length}}
+              <div class="pom-item-actions">
+                {{#each this.actions}}
+                <button type="button" class="pom-item-action" data-action="entryAction" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
+                  <i class="{{this.icon}}"></i>
+                </button>
+                {{/each}}
+              </div>
+              {{/if}}
+              {{{this.description}}}
             </div>
-            {{{this.description}}}
+            {{/if}}
           </div>
-          {{/if}}
+          {{/each}}
         </div>
-        {{/each}}
-      </div>
+        {{/if}}
       {{/if}}
 
-      {{#if spells.length}}
-      <h3 class="pom-section-label">
-        Spells
-        {{#if focus}}<span class="pom-section-sub">Focus {{focus.current}}/{{focus.max}}</span>{{/if}}
-      </h3>
-      <div class="pom-grid-spells">
-        {{#each spells}}
-        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
-          <button type="button" class="pom-list-item" data-action="spellCast" data-item-id="{{this.id}}" data-longpress-source="spells">
-            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>
-          </button>
-          {{#if this.open}}<div class="pom-accordion-body pom-item-info">{{{this.description}}}</div>{{/if}}
-        </div>
-        {{/each}}
-      </div>
-      {{/if}}
-
-      <h3 class="pom-section-label">Saves</h3>
-      <div class="pom-checks-row">
-        {{#each saves}}
-        <button type="button" class="pom-check" data-action="checkRoll" data-source="saves" data-key="{{this.key}}">
-          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
-        </button>
-        {{/each}}
-      </div>
-
-      <h3 class="pom-section-label">Skills</h3>
-      <div class="pom-grid-skills">
-        {{#each skills}}
-        <button type="button" class="pom-check" data-action="checkRoll" data-source="skills" data-key="{{this.key}}">
-          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
-        </button>
-        {{/each}}
-      </div>
-
-      {{#if attackSkills.length}}
-      <h3 class="pom-section-label">Attack Skills</h3>
-      <div class="pom-grid-attack-skills">
-        {{#each attackSkills}}
-        <button type="button" class="pom-check" data-action="checkRoll" data-source="attackSkills" data-key="{{this.key}}">
-          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
-        </button>
-        {{/each}}
-      </div>
-      {{/if}}
-
-      {{#if inventory.length}}
-      <h3 class="pom-section-label pom-accordion-section">
-        <button type="button" class="pom-section-trigger" data-action="toggleAccordion" data-accordion-id="inventory">
-          <span class="pom-section-trigger-label"><span class="pom-chevron">{{#if inventoryExpanded}}&#9662;{{else}}&#9656;{{/if}}</span> Inventory</span>
-          {{#if inventorySlots}}<span class="pom-section-slots">{{inventorySlots.available}}/{{inventorySlots.max}}</span>{{/if}}
-        </button>
-      </h3>
-      {{#if inventoryExpanded}}
-      <div class="pom-grid-inventory">
-        {{#each inventory}}
-        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
-          <button type="button" class="pom-list-item" data-action="itemUse" data-item-id="{{this.id}}" data-longpress-source="inventory">
-            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
-          </button>
-          {{#if this.open}}
-          <div class="pom-accordion-body pom-item-info">
-            <div class="pom-item-actions">
-              {{#each this.actions}}
-              <button type="button" class="pom-item-action" data-action="itemAction" data-item-id="{{../id}}" data-item-source="inventory" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
-                <i class="{{this.icon}}"></i>
-              </button>
-              {{/each}}
-            </div>
-            {{{this.description}}}
+      {{#if this.isEntryList}}
+        {{#if this.icon}}
+        <h3 class="pom-section-label pom-section-label-img"><img src="{{this.icon}}" alt=""><span>{{this.label}}</span></h3>
+        {{else}}
+        <h3 class="pom-section-label">{{this.label}}</h3>
+        {{/if}}
+        <div class="pom-accordion">
+          {{#each this.entries}}
+          <div class="pom-accordion-item">
+            <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{../id}}:{{this.id}}">{{this.name}}</button>
+            {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
           </div>
-          {{/if}}
+          {{/each}}
         </div>
-        {{/each}}
-      </div>
-      {{/if}}
-      {{/if}}
+        {{/if}}
 
-      {{#if magic.length}}
-      <h3 class="pom-section-label pom-accordion-section">
-        <button type="button" class="pom-section-trigger" data-action="toggleAccordion" data-accordion-id="magic">
-          <span class="pom-chevron">{{#if magicExpanded}}&#9662;{{else}}&#9656;{{/if}}</span>
-          Magic
-        </button>
-      </h3>
-      {{#if magicExpanded}}
-      <div class="pom-grid-magic">
-        {{#each magic}}
-        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
-          <button type="button" class="pom-list-item" data-action="itemUse" data-item-id="{{this.id}}" data-longpress-source="magic">
-            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
-          </button>
-          {{#if this.open}}
-          <div class="pom-accordion-body pom-item-info">
-            <div class="pom-item-actions">
-              {{#each this.actions}}
-              <button type="button" class="pom-item-action" data-action="itemAction" data-item-id="{{../id}}" data-item-source="magic" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
-                <i class="{{this.icon}}"></i>
-              </button>
-              {{/each}}
-            </div>
-            {{{this.description}}}
-          </div>
-          {{/if}}
-        </div>
-        {{/each}}
-      </div>
       {{/if}}
-      {{/if}}
-
-      {{#if traits.length}}
-      <h3 class="pom-section-label pom-section-label-img">{{#if ancestryImg}}<img src="{{ancestryImg}}" alt="">{{/if}}<span>Traits</span></h3>
-      <div class="pom-accordion">
-        {{#each traits}}
-        <div class="pom-accordion-item">
-          <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{this.id}}">{{this.name}}</button>
-          {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
-        </div>
-        {{/each}}
-      </div>
-      {{/if}}
-
-      {{#if features.length}}
-      <h3 class="pom-section-label pom-section-label-img">{{#if classImg}}<img src="{{classImg}}" alt="">{{/if}}<span>Features</span></h3>
-      <div class="pom-accordion">
-        {{#each features}}
-        <div class="pom-accordion-item">
-          <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{this.id}}">{{this.name}}</button>
-          {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
-        </div>
-        {{/each}}
-      </div>
-      {{/if}}
-
-      {{#if perks.length}}
-      <h3 class="pom-section-label pom-section-label-img"><img src="icons/magic/light/explosion-beam-impact-silhouette.webp" alt=""><span>Perks</span></h3>
-      <div class="pom-accordion">
-        {{#each perks}}
-        <div class="pom-accordion-item">
-          <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{this.id}}">{{this.name}}</button>
-          {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
-        </div>
-        {{/each}}
-      </div>
-      {{/if}}
+      {{/each}}
     {{/if}}
   </section>
   {{/if}}
@@ -394,6 +300,12 @@
           <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.NibEnabled"}}</span>
           <button type="button" class="pom-toggle {{#if nibEnabled}}on{{/if}}" data-action="toggleNib" aria-pressed="{{nibEnabled}}"></button>
         </div>
+
+        <div class="pom-setting-row">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.FastRolls"}}</span>
+          <button type="button" class="pom-toggle {{#if fastRolls}}on{{/if}}" data-action="toggleFastRolls" aria-pressed="{{fastRolls}}"></button>
+        </div>
+        <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.FastRollsHint"}}</span>
 
         <div class="pom-setting-row pom-setting-row-block">
           <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.NibSensitivity"}}</span>

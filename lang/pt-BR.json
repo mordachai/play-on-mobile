@@ -31,5 +31,7 @@
   "PLAYONMOBILE.Companion.Settings.Handedness.left": "Esquerda",
   "PLAYONMOBILE.Companion.Settings.NibEnabled": "Alça de Pan",
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Sensibilidade da Alça de Pan",
+  "PLAYONMOBILE.Companion.Settings.FastRolls": "Rolagens Rápidas",
+  "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Pula a caixa de diálogo de configuração de rolagem do sistema, quando possível. Só afeta sistemas cuja ficha do companion declara um atalho de rolagem rápida.",
   "PLAYONMOBILE.Companion.UnsupportedSystem": "Este sistema ainda não tem suporte específico. Mostrando apenas dados brutos."
 }

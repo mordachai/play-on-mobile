@@ -1,0 +1,66 @@
+<div class="pom-settings-preset">
+  <p class="pom-hint">
+    Check a setting to force it on a player's device the moment companion
+    mode activates there, and set the value to force. Leave a row unchecked
+    and that player's own value is left completely alone. Only client-scope
+    settings are listed here — a world setting is already shared by everyone.
+  </p>
+
+  <div class="pom-preset-scroll">
+    {{#each groups}}
+    <fieldset class="pom-preset-group">
+      <legend>{{this.title}}</legend>
+      {{#each this.fields}}
+      <div class="pom-preset-row">
+        <label class="pom-preset-check">
+          <input type="checkbox" data-preset-id="{{this.id}}" {{#if this.included}}checked{{/if}}>
+          <span>{{this.label}}</span>
+        </label>
+
+        <div class="pom-preset-value">
+          {{#if this.isBoolean}}
+          <select data-preset-value="{{this.id}}" data-kind="boolean">
+            <option value="true" {{#if this.value}}selected{{/if}}>On</option>
+            <option value="false" {{#unless this.value}}selected{{/unless}}>Off</option>
+          </select>
+          {{/if}}
+
+          {{#if this.isSelect}}
+          <select data-preset-value="{{this.id}}" data-kind="select">
+            {{#each this.choices}}
+            <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+          {{/if}}
+
+          {{#if this.isRange}}
+          <input type="number" data-preset-value="{{this.id}}" data-kind="number" min="{{this.min}}" max="{{this.max}}" step="{{this.step}}" value="{{this.value}}">
+          {{/if}}
+
+          {{#if this.isNumber}}
+          <input type="number" data-preset-value="{{this.id}}" data-kind="number" value="{{this.value}}">
+          {{/if}}
+
+          {{#if this.isText}}
+          <input type="text" data-preset-value="{{this.id}}" data-kind="text" value="{{this.value}}">
+          {{/if}}
+        </div>
+
+        {{#if this.hint}}<span class="pom-preset-hint">{{this.hint}}</span>{{else}}<span></span>{{/if}}
+      </div>
+      {{/each}}
+    </fieldset>
+    {{else}}
+    <p class="pom-hint">No client-scope settings registered yet.</p>
+    {{/each}}
+  </div>
+
+  {{#if message}}
+  <pre class="pom-descriptor-message pom-descriptor-message-{{message.type}}">{{message.text}}</pre>
+  {{/if}}
+
+  <div class="pom-descriptor-actions">
+    <button type="button" data-action="save">Save Preset</button>
+    <button type="button" data-action="clear">Clear All</button>
+  </div>
+</div>

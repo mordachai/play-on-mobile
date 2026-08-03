@@ -510,11 +510,15 @@ body.pom-companion-mode .pom-companion-app .window-content {
 /* Any core Dialog/DialogV2 that opens on the phone (e.g. SpellCastDialog) is
    still a normal Foundry Application — make it usable at touch scale rather
    than the small desktop-sized floating window it defaults to. CSS-only, no
-   reimplementation. SpellCastDialog is exempted (see block below): it
-   position:fixed's and sizes itself via its own JS, and `inset`/`width` here
-   would fight that — pinning it full-screen also left no room to drag it,
-   which is how the user reaches controls that end up past the screen edge. */
-body.pom-companion-mode .application:not(.pom-companion-app):not(.spell-cast-dialog) {
+   reimplementation. `.pom-dialog-fit` / `.pom-dialog-native` are stamped at
+   render time by scripts/gestures/dialog-fit.mjs off the active descriptor's
+   `dialogs.selfPositioned` list — a system-agnostic replacement for what
+   used to be a hardcoded `:not(.spell-cast-dialog)` exemption here.
+   Self-positioning dialogs (vagabond: SpellCastDialog) position:fixed and
+   size themselves via their own JS, and `inset`/`width` here would fight
+   that — pinning them full-screen also leaves no room to drag them, which is
+   how the user reaches controls that end up past the screen edge. */
+body.pom-companion-mode .pom-dialog-fit {
   position: fixed !important;
   inset: 5% !important;
   width: 90% !important;
@@ -1224,7 +1228,7 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
 
 /* Icon-only row atop an expanded item's info — mirrors vagabond's own
    right-click context menu (Use/Send to Chat/Equip-Unequip/Bind/Edit/Delete),
-   see buildItemActions() in vagabond-adapter.mjs. No labels, icons only, per
+   see itemActions() in scripts/adapters/invokes/vagabond.mjs. No labels, icons only, per
    the reference layout — title/aria-label carry the text for a11y. */
 .pom-item-actions {
   display: flex;
@@ -1720,4 +1724,150 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   body.join #notifications {
     padding: 0 5%;
   }
+}
+
+/* GM-only System Descriptor Override panel (scripts/gm/descriptor-override-app.mjs) —
+   plain ApplicationV2 form, not part of the touch-scale companion surface
+   above, so it only needs enough styling to be usable at desktop size. */
+.pom-descriptor-override textarea[name="descriptor"] {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.85rem;
+  resize: vertical;
+}
+
+.pom-descriptor-message {
+  white-space: pre-wrap;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
+  max-height: 8rem;
+  overflow-y: auto;
+}
+
+.pom-descriptor-message-ok {
+  background: rgba(0, 160, 0, 0.15);
+  border: 1px solid rgba(0, 160, 0, 0.4);
+}
+
+.pom-descriptor-message-error {
+  background: rgba(200, 0, 0, 0.15);
+  border: 1px solid rgba(200, 0, 0, 0.4);
+}
+
+.pom-descriptor-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+/* GM-only Companion Settings Preset panel (scripts/gm/settings-preset-app.mjs) —
+   same plain-desktop-form footing as the descriptor override panel above,
+   reusing its .pom-descriptor-message/-actions classes for the save/clear
+   feedback row.
+
+   Rows are a fixed 3-column grid (label | value control | hint) so every
+   row in every group lines up regardless of label/option text length —
+   a flex row here previously let each row negotiate its own column widths
+   from its own content, which is what produced the ragged, truncated
+   columns. Label and hint wrap instead of clipping; only the value control
+   is a fixed track since its content (a <select>) can't wrap. The group
+   list scrolls on its own (registered as the PARTS.app scrollable target)
+   so the fixed action buttons/message stay pinned below it. */
+.pom-settings-preset-app .window-content {
+  overflow: hidden;
+}
+
+.pom-settings-preset {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.pom-preset-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 0.5rem;
+}
+
+.pom-preset-group {
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem 0.75rem;
+}
+
+.pom-preset-group legend {
+  padding: 0 0.4rem;
+  font-weight: 600;
+}
+
+.pom-preset-row {
+  display: grid;
+  /* minmax(0, Nfr), not minmax(140px, 260px) — a fixed-max track claims up
+     to its max BEFORE the trailing 1fr sees any space, which starved the
+     hint column to ~14px and (combined with overflow-wrap: anywhere below,
+     which also collapses a flex/grid item's min-content to a single glyph)
+     rendered as one letter per line. minmax(0, fr) lets both text columns
+     share the row proportionally and actually shrink to 0 before wrapping
+     degenerates like that. */
+  grid-template-columns: minmax(0, 1.3fr) 150px minmax(0, 1fr);
+  align-items: start;
+  column-gap: 0.75rem;
+  min-height: 32px;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.pom-preset-row:last-child {
+  border-bottom: none;
+}
+
+.pom-preset-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  min-width: 0;
+  padding-top: 0.1rem;
+}
+
+.pom-preset-check input[type="checkbox"] {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+}
+
+.pom-preset-check span {
+  /* flex: 1 1 auto — without a grow factor this item sizes itself off
+     min-content instead of the space actually available in the row, and
+     min-content of an overflow-wrap: anywhere text node is ~1 character
+     wide, which is what produced the vertical letter-stack. */
+  flex: 1 1 auto;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.pom-preset-value {
+  min-width: 0;
+}
+
+/* Scoped to .pom-preset-value, not .pom-preset-row — the row also contains
+   the row's own checkbox <input>, which this rule used to match too (any
+   descendant input), stretching the checkbox to fill nearly the whole
+   column and squeezing the label span down to 0 width. */
+.pom-preset-value select,
+.pom-preset-value input {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.pom-preset-hint {
+  min-width: 0;
+  opacity: 0.6;
+  font-size: 0.8em;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }

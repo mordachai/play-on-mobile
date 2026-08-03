@@ -1,0 +1,160 @@
+{
+  "formatVersion": 1,
+  "system": "vagabond",
+  "label": "Vagabond",
+  "invokeModule": "/modules/play-on-mobile/scripts/adapters/invokes/vagabond.mjs",
+  "snapshot": { "custom": "readSnapshot" },
+
+  "dialogs": {
+    "selfPositioned": [".spell-cast-dialog"]
+  },
+
+  "header": {
+    "subtitle": [
+      { "label": "Level", "value": "@snap.level" },
+      "@items.ancestry.name",
+      "@items.class.name"
+    ]
+  },
+
+  "sections": [
+    {
+      "id": "abilities",
+      "render": "stat-row",
+      "revealWith": "header",
+      "hideIfEmpty": false,
+      "source": "@snap.stats",
+      "abbr": { "config": "VAGABOND.statAbbreviations" }
+    },
+
+    {
+      "id": "vitals",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "health", "label": "HP", "value": "@snap.health.value", "max": "@snap.health.max", "write": "system.health.value", "min": 0, "editable": true },
+        { "key": "fatigue", "label": "Fatigue", "value": "@snap.fatigue.value", "max": "@snap.fatigue.max", "write": "system.fatigue", "min": 0, "editable": true },
+        { "key": "mana", "label": "Mana", "value": "@snap.mana.current", "max": "@snap.mana.max", "write": "system.mana.current", "min": 0, "editable": true, "when": "@snap.mana" },
+        { "key": "speed", "label": "Speed", "value": "@snap.speed.base" },
+        { "key": "luck", "label": "Luck Pool", "value": "@snap.luck.current", "max": "@snap.luck.max", "write": "system.currentLuck", "min": 0, "editable": true, "when": "@snap.luck" },
+        { "key": "xp", "label": "XP", "value": "@system.attributes.xp", "max": "@system.attributes.xpRequired", "write": "system.attributes.xp", "min": 0, "editable": true }
+      ]
+    },
+
+    {
+      "id": "equipped",
+      "render": "item-list",
+      "label": "Equipped",
+      "collapsible": false,
+      "cssClass": "pom-grid-equipped",
+      "where": { "type": "equipment", "custom": "isEquipped" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "equippedPress" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "spells",
+      "render": "item-list",
+      "label": "Spells",
+      "collapsible": false,
+      "cssClass": "pom-grid-spells",
+      "where": { "type": "spell" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "castSpell" },
+      "badge": { "label": "Focus", "value": "@snap.focus.current", "max": "@snap.focus.max", "when": "@snap.focus" }
+    },
+
+    {
+      "id": "saves",
+      "render": "check-grid",
+      "label": "Saves",
+      "hideIfEmpty": false,
+      "cssClass": "pom-checks-row",
+      "source": "@snap.saves",
+      "labelFrom": { "config": "VAGABOND.saves", "localize": true },
+      "invoke": { "kind": "custom", "fn": "rollSave" }
+    },
+
+    {
+      "id": "skills",
+      "render": "check-grid",
+      "label": "Skills",
+      "hideIfEmpty": false,
+      "cssClass": "pom-grid-skills",
+      "source": "@snap.skills",
+      "where": { "custom": "isNonWeaponSkill" },
+      "labelFrom": { "config": "VAGABOND.skills", "localize": true },
+      "invoke": { "kind": "custom", "fn": "rollSkill" }
+    },
+
+    {
+      "id": "attackSkills",
+      "render": "check-grid",
+      "label": "Attack Skills",
+      "cssClass": "pom-grid-attack-skills",
+      "source": "@snap.skills",
+      "where": { "custom": "isWeaponSkill" },
+      "labelFrom": { "config": "VAGABOND.skills", "localize": true },
+      "invoke": { "kind": "custom", "fn": "rollSkill" }
+    },
+
+    {
+      "id": "inventory",
+      "render": "item-list",
+      "label": "Inventory",
+      "collapsible": true,
+      "cssClass": "pom-grid-inventory",
+      "where": { "custom": "isStashItem" },
+      "qty": "@item.system.quantity",
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "useItem" },
+      "actions": [{ "custom": "itemActions" }],
+      "badge": { "value": "@snap.slots.available", "max": "@snap.slots.max", "when": "@snap.slots" }
+    },
+
+    {
+      "id": "magic",
+      "render": "item-list",
+      "label": "Magic",
+      "collapsible": true,
+      "cssClass": "pom-grid-magic",
+      "where": { "custom": "isStashRelic" },
+      "qty": "@item.system.quantity",
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "useItem" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "traits",
+      "render": "entry-list",
+      "label": "Traits",
+      "icon": "@items.ancestry.img",
+      "source": "@items.ancestry.system.traits",
+      "name": "@.name",
+      "description": "@.description"
+    },
+
+    {
+      "id": "features",
+      "render": "entry-list",
+      "label": "Features",
+      "icon": "@items.class.img",
+      "source": "@items.class.system.levelFeatures",
+      "name": "@.name",
+      "description": "@.description",
+      "where": { "level": { "lte": "@snap.level" } }
+    },
+
+    {
+      "id": "perks",
+      "render": "entry-list",
+      "label": "Perks",
+      "icon": "icons/magic/light/explosion-beam-impact-silhouette.webp",
+      "source": "@itemsOfType.perk",
+      "name": "@.name",
+      "description": "@.system.description"
+    }
+  ]
+}

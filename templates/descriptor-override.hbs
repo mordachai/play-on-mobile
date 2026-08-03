@@ -1,0 +1,17 @@
+<div class="pom-descriptor-override">
+  <p class="pom-hint">
+    Paste a system descriptor JSON here to override the shipped/registered one
+    for the currently running system ("{{systemId}}"). Leave empty to fall
+    through to the next source (module-registered, then shipped, then the
+    generic fallback). See docs/system-adapters-plan.md §5 for the format.
+  </p>
+  <textarea name="descriptor" rows="18" spellcheck="false" placeholder="{ &quot;formatVersion&quot;: 1, &quot;system&quot;: &quot;{{systemId}}&quot;, &quot;sections&quot;: [ ... ] }">{{raw}}</textarea>
+  {{#if message}}
+  <pre class="pom-descriptor-message pom-descriptor-message-{{message.type}}">{{message.text}}</pre>
+  {{/if}}
+  <div class="pom-descriptor-actions">
+    <button type="button" data-action="validate">Validate</button>
+    <button type="button" data-action="save">Save</button>
+    <button type="button" data-action="clear">Clear Override</button>
+  </div>
+</div>
