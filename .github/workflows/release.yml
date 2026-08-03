@@ -45,7 +45,7 @@ jobs:
       - name: Create module.zip
         if: steps.check_tag.outputs.exists == 'false'
         run: |
-          zip -r module.zip module.json scripts styles templates lang static service-worker.js
+          zip -r module.zip module.json scripts styles templates lang static systems service-worker.js
 
       - name: Create Release
         if: steps.check_tag.outputs.exists == 'false'
