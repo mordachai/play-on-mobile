@@ -1,6 +1,6 @@
 # Play on Mobile
 
-<img width="980" alt="image" src="https://github.com/user-attachments/assets/1c7fb32e-5ca7-44d9-bfef-01a75d33aebd" />
+<img width="980" alt="image" src="https://github.com/user-attachments/assets/c04476ad-ff52-4827-8f51-2f9bf43b1f8e" />
 
 <img width="980" alt="image" src="https://github.com/user-attachments/assets/2581bc5e-1d48-452c-9d29-8d0050ad3cd3" />
 
