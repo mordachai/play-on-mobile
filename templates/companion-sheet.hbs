@@ -1,0 +1,467 @@
+<div class="pom-app">
+<button type="button" class="pom-panel-handle" data-action="togglePanel">
+  <span class="pom-panel-tab">
+    <span class="pom-panel-grip"></span>
+    <span class="pom-panel-tab-label">{{#if needsActorPick}}{{localize "PLAYONMOBILE.Companion.PickActor"}}{{else}}{{name}}{{/if}}</span>
+  </span>
+</button>
+<div class="pom-panel-body">
+{{#if needsActorPick}}
+  <div class="pom-actor-pick">
+    <p>{{localize "PLAYONMOBILE.Companion.NoActor"}}</p>
+    <ul>
+      {{#each actors}}
+      <li><button type="button" data-action="pickActor" data-actor-id="{{this.id}}">{{this.name}}</button></li>
+      {{/each}}
+    </ul>
+  </div>
+{{else}}
+  <nav class="pom-tabs">
+    <button type="button" data-action="switchTab" data-tab="sheet" class="{{#if tabs.sheet}}active{{/if}}">Sheet</button>
+    <button type="button" data-action="switchTab" data-tab="chat" class="{{#if tabs.chat}}active{{/if}}">Chat</button>
+    <button type="button" data-action="switchTab" data-tab="journal" class="{{#if tabs.journal}}active{{/if}}">Journal</button>
+    <button type="button" data-action="switchTab" data-tab="audio" class="{{#if tabs.audio}}active{{/if}}">Audio</button>
+    <button type="button" data-action="switchTab" data-tab="settings" class="{{#if tabs.settings}}active{{/if}}">Settings</button>
+  </nav>
+
+  {{#if tabs.sheet}}
+  <section class="pom-tab pom-tab-sheet">
+    {{#if unsupportedSystem}}
+      <p class="pom-hint">{{localize "PLAYONMOBILE.Companion.UnsupportedSystem"}}</p>
+      <ul class="pom-generic-fields">
+        {{#each genericFields}}<li><span>{{this.key}}</span><span>{{this.value}}</span></li>{{/each}}
+      </ul>
+      <form class="pom-raw-roll">
+        <input type="text" name="raw-formula" placeholder="1d20+5">
+        <button type="button" data-action="rawRoll">Roll</button>
+      </form>
+    {{else}}
+      <div class="pom-name-header">
+        {{#if img}}<img class="pom-name-portrait" src="{{img}}" alt="">{{/if}}
+        <div class="pom-name-text">
+          <button type="button" class="pom-name-trigger" data-action="toggleAccordion" data-accordion-id="name">
+            <strong>{{name}}</strong>
+          </button>
+          {{#if nameExpanded}}
+          <div class="pom-name-details">
+            <span>Level {{level}}</span>
+            {{#if ancestryName}}<span>{{ancestryName}}</span>{{/if}}
+            {{#if className}}<span>{{className}}</span>{{/if}}
+          </div>
+          {{/if}}
+        </div>
+      </div>
+
+      {{#if nameExpanded}}
+      <div class="pom-stats-row">
+        {{#each stats}}
+        <div class="pom-stat">
+          <span class="pom-stat-abbr">{{this.abbr}}</span>
+          <span class="pom-stat-value">{{this.value}}</span>
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      <div class="pom-resource-substat-grid">
+        {{#each resources}}
+        <div class="pom-resource" data-key="{{this.key}}">
+          <div class="pom-resource-label">{{this.label}}</div>
+          <div class="pom-resource-value">{{this.value}}/{{this.max}}</div>
+          {{#if this.editable}}
+          <div class="pom-resource-controls">
+            <button type="button" data-action="resourceDelta" data-key="{{this.key}}" data-delta="-1">&minus;</button>
+            <button type="button" data-action="resourceDelta" data-key="{{this.key}}" data-delta="1">+</button>
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+
+        <div class="pom-resource" data-key="speed">
+          <div class="pom-resource-label">Speed</div>
+          <div class="pom-resource-value">{{speed}}</div>
+        </div>
+        {{#if luck}}
+        <div class="pom-resource" data-key="luck">
+          <div class="pom-resource-label">Luck Pool</div>
+          <div class="pom-resource-value">{{luck.value}}/{{luck.max}}</div>
+          <div class="pom-resource-controls">
+            <button type="button" data-action="resourceDelta" data-key="luck" data-delta="-1">&minus;</button>
+            <button type="button" data-action="resourceDelta" data-key="luck" data-delta="1">+</button>
+          </div>
+        </div>
+        {{/if}}
+        <div class="pom-resource" data-key="xp">
+          <div class="pom-resource-label">XP</div>
+          <div class="pom-resource-value">{{xp}}/{{xpRequired}}</div>
+          <div class="pom-resource-controls">
+            <button type="button" data-action="resourceDelta" data-key="xp" data-delta="-1">&minus;</button>
+            <button type="button" data-action="resourceDelta" data-key="xp" data-delta="1">+</button>
+          </div>
+        </div>
+      </div>
+
+      {{#if equipped.length}}
+      <h3 class="pom-section-label">Equipped</h3>
+      <div class="pom-grid-equipped">
+        {{#each equipped}}
+        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
+          <button type="button" class="pom-list-item" data-action="weaponRoll" data-item-id="{{this.id}}" data-longpress-source="equipped">
+            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>
+          </button>
+          {{#if this.open}}
+          <div class="pom-accordion-body pom-item-info">
+            <div class="pom-item-actions">
+              {{#each this.actions}}
+              <button type="button" class="pom-item-action" data-action="itemAction" data-item-id="{{../id}}" data-item-source="equipped" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
+                <i class="{{this.icon}}"></i>
+              </button>
+              {{/each}}
+            </div>
+            {{{this.description}}}
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      {{#if spells.length}}
+      <h3 class="pom-section-label">
+        Spells
+        {{#if focus}}<span class="pom-section-sub">Focus {{focus.current}}/{{focus.max}}</span>{{/if}}
+      </h3>
+      <div class="pom-grid-spells">
+        {{#each spells}}
+        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
+          <button type="button" class="pom-list-item" data-action="spellCast" data-item-id="{{this.id}}" data-longpress-source="spells">
+            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>
+          </button>
+          {{#if this.open}}<div class="pom-accordion-body pom-item-info">{{{this.description}}}</div>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      <h3 class="pom-section-label">Saves</h3>
+      <div class="pom-checks-row">
+        {{#each saves}}
+        <button type="button" class="pom-check" data-action="checkRoll" data-source="saves" data-key="{{this.key}}">
+          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
+        </button>
+        {{/each}}
+      </div>
+
+      <h3 class="pom-section-label">Skills</h3>
+      <div class="pom-grid-skills">
+        {{#each skills}}
+        <button type="button" class="pom-check" data-action="checkRoll" data-source="skills" data-key="{{this.key}}">
+          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
+        </button>
+        {{/each}}
+      </div>
+
+      {{#if attackSkills.length}}
+      <h3 class="pom-section-label">Attack Skills</h3>
+      <div class="pom-grid-attack-skills">
+        {{#each attackSkills}}
+        <button type="button" class="pom-check" data-action="checkRoll" data-source="attackSkills" data-key="{{this.key}}">
+          <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
+        </button>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      {{#if inventory.length}}
+      <h3 class="pom-section-label pom-accordion-section">
+        <button type="button" class="pom-section-trigger" data-action="toggleAccordion" data-accordion-id="inventory">
+          <span class="pom-section-trigger-label"><span class="pom-chevron">{{#if inventoryExpanded}}&#9662;{{else}}&#9656;{{/if}}</span> Inventory</span>
+          {{#if inventorySlots}}<span class="pom-section-slots">{{inventorySlots.available}}/{{inventorySlots.max}}</span>{{/if}}
+        </button>
+      </h3>
+      {{#if inventoryExpanded}}
+      <div class="pom-grid-inventory">
+        {{#each inventory}}
+        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
+          <button type="button" class="pom-list-item" data-action="itemUse" data-item-id="{{this.id}}" data-longpress-source="inventory">
+            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
+          </button>
+          {{#if this.open}}
+          <div class="pom-accordion-body pom-item-info">
+            <div class="pom-item-actions">
+              {{#each this.actions}}
+              <button type="button" class="pom-item-action" data-action="itemAction" data-item-id="{{../id}}" data-item-source="inventory" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
+                <i class="{{this.icon}}"></i>
+              </button>
+              {{/each}}
+            </div>
+            {{{this.description}}}
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+      {{/if}}
+
+      {{#if magic.length}}
+      <h3 class="pom-section-label pom-accordion-section">
+        <button type="button" class="pom-section-trigger" data-action="toggleAccordion" data-accordion-id="magic">
+          <span class="pom-chevron">{{#if magicExpanded}}&#9662;{{else}}&#9656;{{/if}}</span>
+          Magic
+        </button>
+      </h3>
+      {{#if magicExpanded}}
+      <div class="pom-grid-magic">
+        {{#each magic}}
+        <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
+          <button type="button" class="pom-list-item" data-action="itemUse" data-item-id="{{this.id}}" data-longpress-source="magic">
+            {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
+          </button>
+          {{#if this.open}}
+          <div class="pom-accordion-body pom-item-info">
+            <div class="pom-item-actions">
+              {{#each this.actions}}
+              <button type="button" class="pom-item-action" data-action="itemAction" data-item-id="{{../id}}" data-item-source="magic" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
+                <i class="{{this.icon}}"></i>
+              </button>
+              {{/each}}
+            </div>
+            {{{this.description}}}
+          </div>
+          {{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+      {{/if}}
+
+      {{#if traits.length}}
+      <h3 class="pom-section-label pom-section-label-img">{{#if ancestryImg}}<img src="{{ancestryImg}}" alt="">{{/if}}<span>Traits</span></h3>
+      <div class="pom-accordion">
+        {{#each traits}}
+        <div class="pom-accordion-item">
+          <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{this.id}}">{{this.name}}</button>
+          {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      {{#if features.length}}
+      <h3 class="pom-section-label pom-section-label-img">{{#if classImg}}<img src="{{classImg}}" alt="">{{/if}}<span>Features</span></h3>
+      <div class="pom-accordion">
+        {{#each features}}
+        <div class="pom-accordion-item">
+          <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{this.id}}">{{this.name}}</button>
+          {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+
+      {{#if perks.length}}
+      <h3 class="pom-section-label pom-section-label-img"><img src="icons/magic/light/explosion-beam-impact-silhouette.webp" alt=""><span>Perks</span></h3>
+      <div class="pom-accordion">
+        {{#each perks}}
+        <div class="pom-accordion-item">
+          <button type="button" class="pom-accordion-title" data-action="toggleAccordion" data-accordion-id="{{this.id}}">{{this.name}}</button>
+          {{#if this.open}}<div class="pom-accordion-body">{{{this.description}}}</div>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    {{/if}}
+  </section>
+  {{/if}}
+
+  {{#if tabs.chat}}
+  <section class="pom-tab pom-tab-chat">
+    <div class="pom-chat-log">
+      {{#each chatMessages}}{{{this.html}}}{{else}}<p class="pom-hint">No messages yet.</p>{{/each}}
+    </div>
+    <form class="pom-chat-input">
+      <input type="text" name="chat-message" placeholder="Message or /roll 1d20...">
+      <button type="button" data-action="sendChat">Send</button>
+    </form>
+  </section>
+  {{/if}}
+
+  {{#if tabs.journal}}
+  <section class="pom-tab pom-tab-journal">
+    {{#each journalEntries}}
+    <button type="button" class="pom-list-item" data-action="openJournal" data-journal-id="{{this.id}}">
+      {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.name}}</span>
+    </button>
+    {{else}}
+    <p class="pom-hint">No journal entries available.</p>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if tabs.audio}}
+  <section class="pom-tab pom-tab-audio">
+    <div class="pom-settings-group">
+      <button type="button" class="pom-settings-group-title" data-action="toggleAccordion" data-accordion-id="audio-volume-controls">
+        <span class="pom-chevron">{{#if volumeControlsExpanded}}&#9662;{{else}}&#9656;{{/if}}</span>
+        {{localize "PLAYLIST.VOLUME.CONTROLS"}}
+      </button>
+      {{#if volumeControlsExpanded}}
+      <div class="pom-settings-group-body">
+        {{#each volumeControls}}
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{this.label}}</span>
+          <div class="pom-slider-row">
+            <input type="range" class="pom-audio-global-volume" data-key="{{this.key}}" min="0" max="1" step="0.05" value="{{this.value}}">
+            <span class="pom-nib-sensitivity-value">{{this.percent}}</span>
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+
+    {{#each playlists}}
+    <div class="pom-audio-playlist">
+      <div class="pom-audio-playlist-header">
+        <span class="pom-audio-playlist-name">{{this.name}}</span>
+        <button type="button" class="pom-audio-playbtn" data-action="toggleAudioPlaylist" data-playlist-id="{{this.id}}">{{#if this.playing}}&#9632;{{else}}&#9654;{{/if}}</button>
+      </div>
+      {{#each this.sounds}}
+      <div class="pom-audio-sound-row">
+        <button type="button" class="pom-audio-playbtn" data-action="toggleAudioSound" data-playlist-id="{{../id}}" data-sound-id="{{this.id}}">{{#if this.playing}}&#9632;{{else}}&#9654;{{/if}}</button>
+        <span class="pom-audio-sound-name">{{this.name}}</span>
+        <input type="range" class="pom-audio-volume" data-playlist-id="{{../id}}" data-sound-id="{{this.id}}" min="0" max="1" step="0.05" value="{{this.volume}}">
+      </div>
+      {{else}}
+      <p class="pom-hint pom-audio-empty">No sounds in this playlist.</p>
+      {{/each}}
+    </div>
+    {{else}}
+    <p class="pom-hint">{{localize "PLAYONMOBILE.Companion.Audio.NoPlaylists"}}</p>
+    {{/each}}
+  </section>
+  {{/if}}
+
+  {{#if tabs.settings}}
+  <section class="pom-tab pom-tab-settings">
+    <div class="pom-settings-group">
+      <button type="button" class="pom-settings-group-title" data-action="toggleAccordion" data-accordion-id="settings-module">
+        <span class="pom-chevron">{{#if settingsModuleExpanded}}&#9662;{{else}}&#9656;{{/if}}</span>
+        {{localize "PLAYONMOBILE.Companion.Settings.ModuleGroup"}}
+      </button>
+      {{#if settingsModuleExpanded}}
+      <div class="pom-settings-group-body">
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.ThemeColorLabel"}}</span>
+          <div class="pom-swatch-row">
+            {{#each themeColorOptions}}
+            <button type="button" class="pom-swatch pom-swatch-{{this.value}} {{#if this.selected}}selected{{/if}}" data-action="setThemeColor" data-value="{{this.value}}" aria-label="{{this.label}}"></button>
+            {{/each}}
+          </div>
+          <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.ThemeColorHint"}}</span>
+        </div>
+
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.ThemeModeLabel"}}</span>
+          <div class="pom-swatch-row">
+            {{#each themeModeOptions}}
+            <button type="button" class="pom-swatch pom-swatch-mode-{{this.value}} {{#if this.selected}}selected{{/if}}" data-action="setThemeMode" data-value="{{this.value}}" aria-label="{{this.label}}">{{this.label}}</button>
+            {{/each}}
+          </div>
+        </div>
+
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.ThemeStyleLabel"}}</span>
+          <div class="pom-swatch-row">
+            {{#each themeStyleOptions}}
+            <button type="button" class="pom-swatch pom-swatch-style pom-swatch-style-{{this.value}} {{#if this.selected}}selected{{/if}}" data-action="setThemeStyle" data-value="{{this.value}}" aria-label="{{this.label}}"></button>
+            {{/each}}
+          </div>
+        </div>
+
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Settings.Handedness.Name"}}</span>
+          <div class="pom-swatch-row">
+            {{#each handednessOptions}}
+            <button type="button" class="pom-swatch pom-swatch-handedness {{#if this.selected}}selected{{/if}}" data-action="setHandedness" data-value="{{this.value}}" aria-label="{{this.label}}">{{this.label}}</button>
+            {{/each}}
+          </div>
+          <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Settings.Handedness.Hint"}}</span>
+        </div>
+
+        <div class="pom-setting-row">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.NibEnabled"}}</span>
+          <button type="button" class="pom-toggle {{#if nibEnabled}}on{{/if}}" data-action="toggleNib" aria-pressed="{{nibEnabled}}"></button>
+        </div>
+
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.NibSensitivity"}}</span>
+          <div class="pom-slider-row">
+            <input type="range" name="nib-sensitivity" min="0.3" max="1.2" step="0.05" value="{{nibSensitivity}}">
+            <span class="pom-nib-sensitivity-value">{{nibSensitivity}}</span>
+          </div>
+        </div>
+      </div>
+      {{/if}}
+    </div>
+
+    {{#each foundryGroups}}
+    <div class="pom-settings-group">
+      <button type="button" class="pom-settings-group-title" data-action="toggleAccordion" data-accordion-id="settings-group-{{this.id}}">
+        <span class="pom-chevron">{{#if this.open}}&#9662;{{else}}&#9656;{{/if}}</span>
+        {{this.title}}
+      </button>
+      {{#if this.open}}
+      <div class="pom-settings-group-body">
+        {{#each this.fields}}
+        <div class="pom-setting-row {{#if this.isSelect}}pom-setting-row-block{{/if}}{{#if this.isRange}}pom-setting-row-block{{/if}}{{#if this.isMenu}}pom-setting-row-block{{/if}}">
+          <span class="pom-setting-label">{{this.label}}</span>
+
+          {{#if this.isBoolean}}
+          <button type="button" class="pom-toggle {{#if this.value}}on{{/if}}" data-action="toggleForeignSetting" data-namespace="{{this.namespace}}" data-key="{{this.key}}" aria-pressed="{{this.value}}"></button>
+          {{/if}}
+
+          {{#if this.isSelect}}
+          <select data-foreign-field="select" data-namespace="{{this.namespace}}" data-key="{{this.key}}">
+            {{#each this.choices}}
+            <option value="{{this.value}}" {{#if this.selected}}selected{{/if}}>{{this.label}}</option>
+            {{/each}}
+          </select>
+          {{/if}}
+
+          {{#if this.isRange}}
+          <div class="pom-slider-row">
+            <input type="range" data-foreign-field="range" data-namespace="{{this.namespace}}" data-key="{{this.key}}" min="{{this.min}}" max="{{this.max}}" step="{{this.step}}" value="{{this.value}}">
+            <span class="pom-nib-sensitivity-value">{{this.value}}</span>
+          </div>
+          {{/if}}
+
+          {{#if this.isNumber}}
+          <input type="number" class="pom-foreign-input" data-foreign-field="number" data-namespace="{{this.namespace}}" data-key="{{this.key}}" value="{{this.value}}">
+          {{/if}}
+
+          {{#if this.isText}}
+          <input type="text" class="pom-foreign-input" data-foreign-field="text" data-namespace="{{this.namespace}}" data-key="{{this.key}}" value="{{this.value}}">
+          {{/if}}
+
+          {{#if this.isReadonly}}
+          <span class="pom-setting-hint">{{this.value}}</span>
+          {{/if}}
+
+          {{#if this.isMenu}}
+          <button type="button" class="pom-menu-button" data-action="openSettingsMenu" data-namespace="{{this.namespace}}" data-key="{{this.key}}">{{this.buttonLabel}}</button>
+          {{/if}}
+
+          {{#if this.hint}}<span class="pom-setting-hint">{{this.hint}}</span>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+      {{/if}}
+    </div>
+    {{/each}}
+  </section>
+  {{/if}}
+{{/if}}
+</div>
+</div>

@@ -1,0 +1,14 @@
+<div class="pom-device-control">
+  <p class="pom-hint">Forces the setting on that player's current device right now and reloads their page. They must have this world open already — this doesn't launch it for them.</p>
+  {{#each users}}
+  <div class="pom-device-row">
+    <span class="pom-device-name">{{this.name}}</span>
+    <div class="pom-device-actions">
+      <button type="button" data-action="forceNormal" data-user-id="{{this.id}}" data-user-name="{{this.name}}">Normal</button>
+      <button type="button" data-action="forceCompanion" data-user-id="{{this.id}}" data-user-name="{{this.name}}">Companion (Phone)</button>
+    </div>
+  </div>
+  {{else}}
+  <p class="pom-hint">No other players currently connected.</p>
+  {{/each}}
+</div>

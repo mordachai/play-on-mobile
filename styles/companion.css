@@ -1,0 +1,1723 @@
+/* Companion mode: the live map stays visible and touch-interactive at all
+   times (pan/zoom via scripts/gestures/canvas-gestures.mjs, token drag-to-move
+   works natively) — the sheet/tokens/target UI is a collapsible bottom-dock
+   panel that never covers the whole screen, not a full-viewport replacement.
+   Client-scoped (body.pom-companion-mode). Canvas is deliberately NOT in this
+   chrome-hiding list — it must stay visible and rendering. */
+
+body.pom-companion-mode #scene-navigation-expand,
+body.pom-companion-mode #scene-navigation,
+body.pom-companion-mode #scene-controls,
+body.pom-companion-mode #sidebar,
+body.pom-companion-mode #hotbar,
+body.pom-companion-mode #players,
+body.pom-companion-mode #camera-views,
+body.pom-companion-mode #pause,
+body.pom-companion-mode #token-hud,
+body.pom-companion-mode #token-action-hud,
+/* Core's ClientIssues fires a permanent "resolution too low" error on any
+   viewport under 1024x768 — every phone triggers it. Expected/unactionable
+   here, so all toast notifications are suppressed on this client. */
+body.pom-companion-mode #notifications {
+  display: none !important;
+}
+
+body.pom-companion-mode #board {
+  inset: 0 !important;
+  touch-action: none;
+}
+
+/* ============================================================
+   THEME COLOR TOKENS — swap these per-theme (e.g. a
+   .pom-theme-x class added alongside body.pom-companion-mode)
+   to reskin titles/stats/values/resources/borders without
+   touching layout rules below. Fallbacks match current look.
+   ============================================================ */
+body.pom-companion-mode {
+  --pom-color-title: var(--color-light-1, #eee);
+  --pom-color-title-accent: #ffbc04;
+  --pom-color-stat: var(--color-light-1, #eee);
+  --pom-color-value: var(--color-light-1, #eee);
+  --pom-color-resource-label: var(--color-light-1, #eee);
+  --pom-color-resource-value: #ffbc04;
+  --pom-color-resource-fill: var(--color-warm-2, #ff6400);
+  --pom-color-accent: var(--color-warm-2, #ff6400);
+  --pom-color-border: white;
+  --pom-color-border-soft: rgba(255, 255, 255, 0.12);
+  --pom-color-1: rgb(5, 5, 5);
+  --pom-color-1-text: #eee;
+
+  /* Base app text + surfaces — mode (light/dark) tokens below override all
+     of these; these fallbacks match the original hardcoded dark look, so
+     nothing changes if a .pom-mode-* class somehow isn't present. */
+  --pom-color-text: var(--color-light-1, #eee);
+  --pom-color-panel-bg: var(--color-cool-5, #1e1e1e);
+  --pom-color-overlay-bg: #222;
+  --pom-color-overlay-text: #eee;
+  --pom-color-surface-1: rgba(255, 255, 255, 0.04);
+  --pom-color-surface-2: rgba(255, 255, 255, 0.06);
+  --pom-color-surface-3: rgba(255, 255, 255, 0.09);
+
+  /* Radius tokens — theme-level, not orientation-scoped (a theme's
+     "roundness" shouldn't flip between portrait/landscape). --pom-radius-img
+     sizes ancestry/class/perk portraits and list-item icons: 50% for
+     circular themes, 0 for square. --pom-radius-btn sizes pill/tile
+     buttons (stats, resources, checks, list items): 999px for fat pills,
+     0 for hard squares. Overridden per-style below (.pom-style-round/
+     -smooth/-square); these are the "smooth" defaults. */
+  --pom-radius-img: 10px;
+  --pom-radius-btn: 12px;
+
+      /*Variables */
+    --b-1: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.12));
+    --m-1: 3px;
+    --m-2: 6px;
+    --p-1: 3px;
+    --p-2: 5px;
+    --p-3: 8px;
+    --px-1: 3px 6px;
+}
+
+/* ============================================================
+   MODE (light/dark) — generic surfaces/text, independent of which
+   color theme is active. Toggled on document.body itself, NOT
+   .pom-companion-app (see companion-app.mjs _onRender) — the
+   long-press context menu (.pom-item-menu, companion-app.mjs
+   _showPopupMenu) is appended directly to document.body rather than
+   inside .pom-companion-app, so it can only inherit these tokens if
+   they're declared at the body level; declaring them on the app
+   root instead would leave that popup permanently dark regardless
+   of the active mode.
+   ============================================================ */
+body.pom-companion-mode.pom-mode-dark {
+  --pom-color-text: #eee;
+  --pom-color-title: #eee;
+  --pom-color-stat: #eee;
+  --pom-color-value: #eee;
+  --pom-color-resource-label: #eee;
+  --pom-color-border: rgba(255, 255, 255, 0.4);
+  --pom-color-border-soft: rgba(255, 255, 255, 0.12);
+  --pom-color-panel-bg: #1e1e1e;
+  --pom-color-overlay-bg: #222;
+  --pom-color-overlay-text: #eee;
+  --pom-color-surface-1: rgba(255, 255, 255, 0.04);
+  --pom-color-surface-2: rgba(255, 255, 255, 0.06);
+  --pom-color-surface-3: rgba(255, 255, 255, 0.09);
+}
+
+body.pom-companion-mode.pom-mode-light {
+  --pom-color-text: #1c1c1c;
+  --pom-color-title: #1c1c1c;
+  --pom-color-stat: #333;
+  --pom-color-value: #1c1c1c;
+  --pom-color-resource-label: #444;
+  --pom-color-border: rgba(0, 0, 0, 0.35);
+  --pom-color-border-soft: rgba(0, 0, 0, 0.12);
+  --pom-color-panel-bg: #f4f2ef;
+  --pom-color-overlay-bg: #fff;
+  --pom-color-overlay-text: #1c1c1c;
+  --pom-color-surface-1: rgba(0, 0, 0, 0.035);
+  --pom-color-surface-2: rgba(0, 0, 0, 0.055);
+  --pom-color-surface-3: rgba(0, 0, 0, 0.08);
+}
+
+/* ============================================================
+   COLOR THEMES — the "brand" colors: titles/section-labels
+   (--pom-color-title-accent), resource values + active-tab/selected
+   accents (--pom-color-accent / --pom-color-resource-value /
+   -resource-fill), and the name-tab chip (--pom-color-1/-1-text).
+   Base rule targets dark mode's brighter values; the paired
+   .pom-mode-light override darkens them back down for readable
+   contrast as TEXT on a light background (a hue that pops on
+   near-black often reads as too low-contrast on near-white). Old
+   School is a straight monochrome inversion instead of a hue, and
+   deliberately keeps its border-soft a little stronger than the other
+   themes as its retro-frame identity — the "ditch the strong
+   borders" note was about the debug-strength default, not this
+   theme's whole visual point.
+   ============================================================ */
+body.pom-companion-mode .pom-companion-app.pom-theme-forest {
+  --pom-color-title-accent: #7fd99a;
+  --pom-color-accent: #4fbf6f;
+  --pom-color-resource-value: #7fd99a;
+  --pom-color-resource-fill: #4fbf6f;
+  --pom-color-1: #16241a;
+  --pom-color-1-text: #eafff0;
+}
+body.pom-companion-mode.pom-mode-light .pom-companion-app.pom-theme-forest {
+  --pom-color-title-accent: #2f7a45;
+  --pom-color-accent: #2f7a45;
+  --pom-color-resource-value: #2f7a45;
+  --pom-color-1: var(--pom-color-accent);
+}
+
+body.pom-companion-mode .pom-companion-app.pom-theme-ocean {
+  --pom-color-title-accent: #7cd6f2;
+  --pom-color-accent: #2fa8d6;
+  --pom-color-resource-value: #7cd6f2;
+  --pom-color-resource-fill: #2fa8d6;
+  --pom-color-1: #0f2733;
+  --pom-color-1-text: #eaf9ff;
+}
+body.pom-companion-mode.pom-mode-light .pom-companion-app.pom-theme-ocean {
+  --pom-color-title-accent: #146c8c;
+  --pom-color-accent: #146c8c;
+  --pom-color-resource-value: #146c8c;
+  --pom-color-1: var(--pom-color-accent);
+}
+
+body.pom-companion-mode .pom-companion-app.pom-theme-sunset {
+  --pom-color-title-accent: #ffbc04;
+  --pom-color-accent: #ff6a3d;
+  --pom-color-resource-value: #ffbc04;
+  --pom-color-resource-fill: #ff6a3d;
+  --pom-color-1: rgb(5, 5, 5);
+  --pom-color-1-text: #eee;
+}
+body.pom-companion-mode.pom-mode-light .pom-companion-app.pom-theme-sunset {
+  --pom-color-title-accent: #a8710a;
+  --pom-color-accent: #c9531f;
+  --pom-color-resource-value: #a8710a;
+  --pom-color-1: var(--pom-color-accent);
+}
+
+body.pom-companion-mode .pom-companion-app.pom-theme-sakura {
+  --pom-color-title-accent: #ffb0d0;
+  --pom-color-accent: #ff5f9e;
+  --pom-color-resource-value: #ffb0d0;
+  --pom-color-resource-fill: #ff5f9e;
+  --pom-color-1: #241620;
+  --pom-color-1-text: #fff0f6;
+}
+body.pom-companion-mode.pom-mode-light .pom-companion-app.pom-theme-sakura {
+  --pom-color-title-accent: #b23a72;
+  --pom-color-accent: #d4477e;
+  --pom-color-resource-value: #b23a72;
+  --pom-color-1: var(--pom-color-accent);
+}
+
+body.pom-companion-mode .pom-companion-app.pom-theme-oldschool {
+  --pom-color-title-accent: #fff;
+  --pom-color-accent: #fff;
+  --pom-color-resource-value: #fff;
+  --pom-color-resource-fill: #fff;
+  --pom-color-1: #fff;
+  --pom-color-1-text: #000;
+  --pom-color-border-soft: rgba(255, 255, 255, 0.35);
+}
+body.pom-companion-mode.pom-mode-light .pom-companion-app.pom-theme-oldschool {
+  --pom-color-title-accent: #000;
+  --pom-color-accent: #000;
+  --pom-color-resource-value: #000;
+  --pom-color-resource-fill: #000;
+  --pom-color-1: #000;
+  --pom-color-1-text: #fff;
+  --pom-color-border-soft: rgba(0, 0, 0, 0.35);
+}
+
+/* ============================================================
+   STYLES — corner treatment only, independent of color/mode.
+   ============================================================ */
+body.pom-companion-mode .pom-companion-app.pom-style-round {
+  --pom-radius-img: 50%;
+  --pom-radius-btn: 999px;
+}
+body.pom-companion-mode .pom-companion-app.pom-style-smooth {
+  --pom-radius-img: 10px;
+  --pom-radius-btn: 12px;
+}
+body.pom-companion-mode .pom-companion-app.pom-style-square {
+  --pom-radius-img: 0;
+  --pom-radius-btn: 0;
+}
+
+/* ============================================================
+   SIZING TOKENS — two blocks, orientation only. No compact/narrow
+   sub-tiers: real phones (measured ~360x780 CSS px) land in the
+   "small" end of both anyway, so that's just the default now. Edit
+   values directly instead of hunting extra breakpoints.
+   ============================================================ */
+
+@media (orientation: landscape) {
+  body.pom-companion-mode {
+    --pom-font-app: 1rem;
+    --pom-font-handle: 0.85rem;
+    --pom-handle-size: 36px;
+    --pom-font-name-trigger: 0.95rem;
+    --pom-font-name-details: 0.78rem;
+    --pom-font-stat-abbr: 0.65rem;
+    --pom-font-resource-label: 0.7rem;
+    --pom-font-resource-value: 0.8rem;
+    --pom-font-section-label: 0.75rem;
+    --pom-font-check-label: 0.7rem;
+    --pom-min-stat: 38px;
+    --pom-min-check: 38px;
+    --pom-min-list-item: 42px;
+    --pom-font-list-item: 0.85rem;
+    --pom-list-img-size: 24px;
+    --pom-font-accordion-title: 0.85rem;
+    --pom-min-accordion-title: 34px;
+    --pom-font-accordion-body: 0.8rem;
+    --pom-font-chat: 0.8rem;
+    --pom-min-name-trigger: 32px;
+    --pom-min-resource-btn: 20px;
+  }
+
+  /* ---- Open (expanded) override — wider panel, more room. Custom props
+     cascade from here down into .pom-app, .pom-grid-skills, etc. since
+     they're all descendants of .pom-companion-app, so only the deltas
+     need restating. Grid column *counts* are no longer part of this
+     override — the tile/list grids size themselves responsively off the
+     dock's actual width (see .pom-grid-* below), so they naturally step
+     from 1 column up as expanding gives them more room, no state-driven
+     knob needed. ---- */
+  body.pom-companion-mode .pom-companion-app.pom-expanded {
+    --pom-font-app: 1rem;
+    --pom-font-handle: 1rem;
+    --pom-font-name-trigger: 1.1rem;
+    --pom-font-name-details: 0.9rem;
+    --pom-font-stat-abbr: 0.75rem;
+    --pom-font-resource-label: 0.8rem;
+    --pom-font-resource-value: 0.9rem;
+    --pom-font-section-label: 0.85rem;
+    --pom-font-check-label: 0.8rem;
+    --pom-font-accordion-title: 0.95rem;
+    --pom-font-accordion-body: 0.9rem;
+    --pom-font-chat: 0.9rem;
+    --pom-font-list-item: 0.95rem;
+  }
+}
+
+@media (orientation: portrait) {
+  body.pom-companion-mode {
+    --pom-font-app: 1rem;
+    --pom-font-handle: 1.5rem;
+    --pom-handle-size: 36px;
+    --pom-font-name-trigger: 1.5rem;
+    --pom-font-name-details: 1.1rem;
+    --pom-font-stat-abbr: 1.5rem;
+    --pom-font-resource-label: 1.4rem;
+    --pom-font-resource-value: 1.4rem;
+    --pom-font-section-label: 0.95rem;
+    --pom-font-check-label: 1rem;
+    --pom-min-stat: 56px;
+    --pom-min-check: 56px;
+    --pom-min-list-item: fit-content;
+    --pom-font-list-item: 1rem;
+    --pom-list-img-size: 34px;
+    --pom-font-accordion-title: 1.1rem;
+    --pom-min-accordion-title: 48px;
+    --pom-font-accordion-body: 1.15rem;
+    --pom-font-chat: 1.1rem;
+    --pom-min-name-trigger: 36px;
+    --pom-min-resource-btn: 20px;
+
+
+  }
+}
+
+
+/* Portrait-only bumps — no landscape counterpart, so no shared token. */
+@media (orientation: portrait) {
+  /* Was 1.8rem/52px, sized back when there were only 3 short tabs (Sheet/
+     Chat/Journal) at a fixed 88px width — with Audio/Settings added, that
+     combination overflowed the button box and cropped the label. Smaller
+     font + auto-width padding instead of a fixed min-width lets 5 tabs
+     fit without clipping; the row already scrolls horizontally if needed. */
+  .pom-tabs button {
+    font-size: 1.05rem;
+    min-height: 48px;
+  }
+
+  .pom-stat-value {
+    font-size: 1.4rem;
+  }
+
+  .pom-hint {
+    font-size: 1.15rem;
+  }
+
+  .pom-generic-fields li,
+  .pom-raw-roll input,
+  .pom-chat-input input,
+  .pom-actor-pick button {
+    font-size: 1.15rem;
+  }
+}
+
+/* The companion app: a collapsible dock panel, not a full-viewport window.
+   Portrait = bottom sheet, full width. Landscape = right-edge strip.
+   Portrait's box size is CONSTANT (55vh) — collapsing/expanding slides the
+   whole box off/on screen via the bottom calc() below, same technique as a
+   native bottom-sheet drawer. Landscape instead RESIZES its actual width
+   live (see the landscape media block further down) so the 2-/3-col grids
+   inside visibly restack while dragging. Either way the handle never needs
+   to poke outside its own box — it's a plain first flex child of .pom-app,
+   always fully on-screen, nothing to clip. */
+body.pom-companion-mode .pom-companion-app {
+  position: fixed !important;
+  z-index: 10;
+  transition: bottom 0.2s ease-out, right 0.2s ease-out, left 0.2s ease-out, width 0.2s ease-out;
+  /* Foundry's core .app class (every ApplicationV2 root gets it) paints
+     background: var(--background) + a box-shadow + backdrop-filter blur +
+     border-radius — app chrome we don't want, since .pom-panel-body (not
+     the root) carries our actual sheet background/corners. Left alone,
+     that core background fills the whole box and shows through wherever
+     .pom-app/.pom-panel-handle are transparent (the collapsed peek strip,
+     the handle's own gaps). */
+  background: none !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  border-radius: 0 !important;
+  /* A FIFTH core-CSS fight, distinct from the four above: `.application`
+     (foundry2.css) sets `min-width: 200px` with no !important of its own —
+     but min-width always wins over width in the box-sizing algorithm
+     regardless of specificity/importance, it's a separate clamping step,
+     not a competing declaration for the same property. Never mattered
+     before landscape resized live (a constant 350px box sliding off-screen
+     never dropped under 200px), but now that width itself IS the collapse
+     mechanism, core's floor silently clamped both "closed" (36px) and
+     "half-open" (196px) to the same 200px — the panel could never actually
+     close. min-width: 0 hands full control back to our own width calc. */
+  min-width: 0 !important;
+}
+
+/* While the handle is being dragged (see companion-app.mjs _wireResizeHandle)
+   the transition would lag a finger's actual position — kill it for the
+   duration of the drag, the 0.2s tween comes back for tap-to-toggle. */
+body.pom-companion-mode .pom-companion-app.pom-dragging {
+  transition: none !important;
+}
+
+@media (orientation: portrait) {
+  /* --pom-panel-offset drives how far the box has slid up from its parked
+     (collapsed) position: 0 = only the handle's height is on-screen, max
+     (--pom-panel-h - --pom-handle-size) = fully open, bottom:0. A drag on
+     the handle (companion-app.mjs _wireResizeHandle) sets an inline px
+     value for --pom-panel-offset, which wins over the class defaults below
+     since inline beats class — same mechanism the old --pom-panel-size
+     used, just driving position instead of height now. */
+  body.pom-companion-mode .pom-companion-app {
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    --pom-panel-h: 55vh;
+    height: var(--pom-panel-h) !important;
+    --pom-panel-offset: 0px;
+    bottom: calc(-1 * (var(--pom-panel-h) - var(--pom-handle-size, 50px)) + var(--pom-panel-offset)) !important;
+  }
+
+  body.pom-companion-mode .pom-companion-app.pom-expanded {
+    --pom-panel-offset: calc(var(--pom-panel-h) - var(--pom-handle-size, 50px));
+  }
+
+  .pom-panel-body {
+    border-radius: 12px 12px 0 0;
+  }
+}
+
+body.pom-companion-mode .pom-companion-app .window-header,
+body.pom-companion-mode .pom-companion-app .window-resize-handle {
+  display: none !important;
+}
+
+body.pom-companion-mode .pom-companion-app .window-content {
+  padding: 0;
+  height: 100%;
+  /* Core's dark-theme mixin sets its own backdrop-filter: blur(4px) here,
+     separately from .app's (already cleared above) — .window-content
+     doesn't inherit the app root's backdrop-filter, each element's is
+     independent. !important since the core selector
+     (.mixin-theme-dark-variables .application .window-content, and its
+     body.theme-dark / .themed.theme-dark siblings) carries 3 classes of
+     specificity with no !important of its own, which our plain descendant
+     selector alone wouldn't beat. Scoped to .pom-companion-app only —
+     other applications keep their blur. */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border: none;
+  margin: 0;
+}
+
+/* Landscape: dock to the right edge instead of the bottom — a bottom dock
+   would eat too much of the already-short vertical space. No desktop-window
+   guard anymore (orientation-only per the simplified breakpoint scheme) —
+   a maximized landscape desktop browser window will now also get this
+   docking, which is a known trade-off of dropping the size check. Which
+   edge (right vs left) depends on the companionHandedness setting — see
+   .pom-left-handed below — so the dock sits under the player's dominant
+   thumb; the pan nib (pan-nib.mjs) always takes the opposite edge. */
+@media (orientation: landscape) {
+  /* Unlike portrait (constant-size box that SLIDES on/off screen), landscape
+     RESIZES live: the edge (right, or left when left-handed) stays pinned
+     and --pom-panel-offset drives actual `width` directly, from 0 (only the
+     handle peeking) up to --pom-panel-w (350px, fully open). This is
+     intentional — dragging must visibly restack the 2-/3-col grids inside
+     as the panel narrows (see .pom-resource-substat-grid / .pom-checks-row
+     container queries below), which requires real reflow during the drag,
+     not just a clipped-offscreen box. See companion-app.mjs
+     _wireResizeHandle for the continuous-resize + sticky-snap drag logic
+     (landscape-only; portrait keeps the old binary open/closed snap). */
+  body.pom-companion-mode .pom-companion-app {
+    left: auto !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100% !important;
+    --pom-panel-w: 350px;
+    right: 0 !important;
+    --pom-panel-offset: 0px;
+    width: calc(var(--pom-handle-size, 36px) + var(--pom-panel-offset)) !important;
+  }
+
+  body.pom-companion-mode .pom-companion-app.pom-expanded {
+    --pom-panel-offset: calc(var(--pom-panel-w) - var(--pom-handle-size, 36px));
+  }
+
+  /* Left-handed: mirror image — dock pinned to the screen's left edge
+     instead, same --pom-panel-offset driving `width`, no position calc
+     needed since it's a resize now, not a slide. */
+  body.pom-companion-mode .pom-companion-app.pom-left-handed {
+    right: auto !important;
+    left: 0 !important;
+  }
+
+  /* .pom-app lays the handle and body out side by side now (column in
+     portrait, row here) — row-reverse for left-handed so the handle stays
+     on the canvas-facing edge (now the box's right side). Qualified with
+     body.pom-companion-mode (not just ".pom-app") so its specificity beats
+     the unscoped ".pom-app { flex-direction: column }" base rule declared
+     later in this file — same specificity would otherwise let source order
+     silently win and keep it column even here. */
+  body.pom-companion-mode .pom-app {
+    flex-direction: row;
+    border: none;
+  }
+
+  body.pom-companion-mode .pom-companion-app.pom-left-handed .pom-app {
+    flex-direction: row-reverse;
+  }
+
+  .pom-panel-body {
+    border-radius: 12px 0 0 12px;
+  }
+
+  body.pom-companion-mode .pom-companion-app.pom-left-handed .pom-panel-body {
+    border-radius: 0 12px 12px 0;
+  }
+}
+
+/* Any core Dialog/DialogV2 that opens on the phone (e.g. SpellCastDialog) is
+   still a normal Foundry Application — make it usable at touch scale rather
+   than the small desktop-sized floating window it defaults to. CSS-only, no
+   reimplementation. SpellCastDialog is exempted (see block below): it
+   position:fixed's and sizes itself via its own JS, and `inset`/`width` here
+   would fight that — pinning it full-screen also left no room to drag it,
+   which is how the user reaches controls that end up past the screen edge. */
+body.pom-companion-mode .application:not(.pom-companion-app):not(.spell-cast-dialog) {
+  position: fixed !important;
+  inset: 5% !important;
+  width: 90% !important;
+  height: 90% !important;
+  max-width: 90vw !important;
+  max-height: 90vh !important;
+}
+
+body.pom-companion-mode .application:not(.pom-companion-app) button,
+body.pom-companion-mode .application:not(.pom-companion-app) input,
+body.pom-companion-mode .application:not(.pom-companion-app) select {
+  min-height: 44px;
+  font-size: 1rem;
+}
+
+/* Core ApplicationV2's own window-header drag (application.mjs #onWindowDragStart)
+   is already Pointer Events-based — touch should "just work" — but core ships no
+   `touch-action` on `.window-header`, so a touch browser can still claim the
+   gesture as a page/scroll pan and fire `pointercancel` before our drag gets more
+   than a few px (confirmed root cause of vagabond's SpellCastDialog: fixed there
+   with this same rule, see spell-cast-dialog.mjs _attachDrag). This generic rule
+   covers every *framed* dialog any system opens on the phone for free — no
+   per-system JS needed. Frameless custom dialogs (window:{frame:false}, no
+   .window-header) are NOT covered — those hand-roll their own drag and need
+   their own Pointer Events + touch-action, same as we did for vagabond. */
+body.pom-companion-mode .application .window-header {
+  touch-action: none;
+}
+
+/* SpellCastDialog keeps its native ~350px width (own setPosition() in
+   spell-cast-dialog.mjs) and its own drag, which is Pointer Events-based
+   (mouse/touch/pen unified) so it's draggable into reach on the phone with
+   no bridging needed on this side. */
+
+/* JournalSheet (openJournalEntry in journal-panel.mjs) is a core Application
+   too, but core hardcodes `.sheet.journal-entry:not(.minimized,...) {
+   min-width: 680px; min-height: 680px }` (foundry2.css) — same class of trap
+   as the .application min-width:200px one documented in the CSS memory:
+   min-width always wins over the width:90% above regardless of specificity,
+   so without this the sheet silently never fit the phone viewport. The
+   300px-wide .journal-sidebar (table of contents) is the other space hog —
+   pull it out of flow into a slide-over drawer (collapsed = icon rail only,
+   core's own `.expanded` class toggle still drives open/closed) instead of
+   permanently squeezing .journal-entry-content sideways. PDF pages are left
+   unstyled here on purpose — text/image pages are the priority. */
+body.pom-companion-mode .sheet.journal-entry {
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+body.pom-companion-mode .sheet.journal-entry .window-content {
+  position: relative;
+}
+
+body.pom-companion-mode .sheet.journal-entry .journal-sidebar {
+  position: absolute !important;
+  inset: 0 auto 0 0 !important;
+  width: var(--sidebar-width-collapsed, 40px) !important;
+  flex-basis: auto !important;
+  z-index: 3;
+  background: var(--color-cool-5-90, #1f2129);
+}
+
+body.pom-companion-mode .sheet.journal-entry.expanded .journal-sidebar {
+  width: min(85vw, 300px) !important;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.5);
+}
+
+body.pom-companion-mode .sheet.journal-entry .journal-entry-content {
+  margin-left: var(--sidebar-width-collapsed, 40px);
+}
+
+body.pom-companion-mode .sheet.journal-entry .journal-header .title {
+  font-size: 1.4rem;
+  height: auto;
+  line-height: 1.3;
+}
+
+/* ---- App layout ---- */
+/* Structural only below — sizes (font-size/min-height/dimensions) come from
+   the var(--pom-*) tokens grouped at the top of this file. */
+
+/* .pom-app lays the handle out as a normal flex child, stacked before
+   .pom-panel-body (column in portrait, row in landscape — see the
+   orientation blocks above). Always fully inside .pom-companion-app's own
+   box now, nothing poking outside it, so no ancestor overflow can ever
+   clip it — the box itself slides on/off screen instead (see bottom/right
+   calc() above). */
+.pom-app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  font-size: var(--pom-font-app, 1rem);
+  color: var(--pom-color-text, #eee);
+  margin: 0;
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+/* Fixed size along the main axis (--pom-handle-size: the same value the
+   bottom/right calc() above treats as "peek" height/width, so the handle
+   is exactly what's left on-screen when collapsed). Centered on the cross
+   axis via align-self so it stays a small tab, not a full-width/height
+   bar. */
+.pom-panel-handle {
+  flex: 0 0 var(--pom-handle-size);
+  align-self: center;
+  z-index: 2;
+  display: flex;
+  /* flex-end (not center): the handle's own row is fixed at
+     --pom-handle-size (that's correct — it's the peek amount), but
+     centering the tab inside it left equal empty space above and below.
+     flex-end anchors the tab to the row's trailing edge so it touches
+     .pom-panel-body right after it in the flow, instead of floating. */
+  align-items: flex-end;
+  justify-content: center;
+  background: none;
+  border: none;
+  /* It's a real <button> that stays focused after a tap/click — without
+     this the browser's own focus outline draws on top of .pom-panel-tab's
+     own ::before faux-border, looking like two overlapping borders. */
+  outline: none;
+  /* Foundry core's generic "a.button, button" rule (foundry2.css) sets
+     height/min-height: var(--button-size) [2em] and padding: 0 0.5rem
+     unconditionally on every button, ours included. flex-basis wins over
+     that height on the main axis, but on the CROSS axis (width in
+     portrait's column layout, height in landscape's row layout) nothing
+     of ours overrides it, so core's fixed 2em silently caps/pads the
+     handle instead of it hugging .pom-panel-tab's actual content — that's
+     the extra box around the tab. Reset all four back to content-driven. */
+  height: auto;
+  min-height: 0;
+  width: auto;
+  min-width: 0;
+  padding: 0;
+  color: inherit;
+  /* Draggable to resize (see _wireResizeHandle) as well as tappable to
+     toggle — none stops the browser eating the gesture as a page scroll. */
+  touch-action: none;
+  cursor: ns-resize;
+}
+
+@media (orientation: landscape) {
+  /* Landscape stretches the handle to the dock's full height instead of
+     auto-hugging the tab (align-self: stretch overrides the base rule's
+     center) — that gives .pom-panel-tab an exact, known 44px × 100%-height
+     box to center itself within via absolute positioning below, instead of
+     the tab having to fit/overflow a shrink-wrapped box. Rotating the
+     WHOLE handle (as landscape did before) makes "flush against the
+     sheet" depend on pre-rotation align-items/justify-content offsets
+     getting swapped by the rotation's axis-swap into the right post-
+     rotation direction — workable in theory, but fragile and easy to get
+     backwards (did, twice). Absolute-centering the tab inside a box whose
+     real size is already exactly the peek column sidesteps that entirely:
+     translate(-50%,-50%) is symmetric by construction, no axis-swap math
+     needed, and it still comes out centered on the dock's full height,
+     matching the original design. */
+  body.pom-companion-mode .pom-companion-app .pom-panel-handle {
+    align-self: stretch;
+    position: relative;
+    cursor: ew-resize;
+  }
+
+  body.pom-companion-mode .pom-companion-app .pom-panel-tab {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    /* Centering (translate -50%,-50%) only lands flush on BOTH edges of
+       the 44px column if the tab's pre-rotation height (which becomes its
+       post-rotation width) exactly equals that 44px — otherwise the
+       leftover slack shows as a red sliver on both sides. Base rule's
+       min-height (34px, sized for portrait's un-rotated tab) doesn't
+       match, hence the gap. Pin it to the same --pom-handle-size the
+       bottom/right slide calc() and the handle's own flex-basis use, so
+       there's no slack left to show. */
+    min-height: var(--pom-handle-size, 44px);
+    transform: translate(-50%, -50%) rotate(-90deg);
+  }
+
+  body.pom-companion-mode .pom-companion-app.pom-left-handed .pom-panel-tab {
+    transform: translate(-50%, -50%) rotate(90deg);
+  }
+}
+
+/* The handle itself: a small chamfered tab — "/ name \" — narrower at the
+   top than the bottom, standing in for both the old hamburger (closed) and
+   arrow (compact/expanded) icons. A doubled grip bar carries the "this
+   drags" affordance instead of an icon; the label is always the actor
+   name, so toggling collapsed/expanded never needs to swap tab content. */
+.pom-panel-tab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  max-width: 50%;
+  min-width: fit-content;
+  min-height: 34px;
+  padding: 4px 20px 3px;
+  background: var(--pom-color-1);
+  color: var(--pom-color-1-text, #eee);
+  border: none;
+  border-radius: 0;
+  position: relative;
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+}
+
+/* Faux-border behind it, since clip-path clips a real border away. Tinted
+   relative to the tab's own text color (not the page's border-soft token,
+   which is themed for the page background, not this chip's own background)
+   so it stays visible against every theme's --pom-color-1. */
+.pom-panel-tab::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  background: color-mix(in srgb, var(--pom-color-1-text, #fff) 20%, transparent);
+  clip-path: polygon(14% 0, 86% 0, 100% 100%, 0 100%);
+}
+
+.pom-panel-grip {
+  width: 18px;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  opacity: 0.5;
+  box-shadow: 0 4px 0 currentColor;
+}
+
+.pom-panel-tab-label {
+  font-size: 0.8rem;
+  color: inherit;
+  opacity: 0.9;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The actual sheet surface — background/clipping live here. */
+.pom-panel-body {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+  min-width: 0;
+  background: var(--pom-color-panel-bg, #1e1e1e);
+  color: var(--pom-color-text, #eee);
+  /* Lets .pom-resource-substat-grid / .pom-checks-row below key their column
+     count off this element's own live width via @container queries — works
+     whether that width changes from portrait's % of viewport or landscape's
+     continuous drag-resize (see companion-app.mjs _wireResizeHandle). No
+     padding/border on .pom-panel-body itself, so its content-box width here
+     equals the panel's actual usable width (app width minus the handle) —
+     the same figure the drag code's `offset` already tracks, which is why
+     the JS snap-assist stops (0/160/260/max) match these breakpoints 1:1. */
+  container-type: inline-size;
+}
+
+.pom-tabs {
+  display: flex;
+  flex: 0 0 auto;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.15));
+}
+
+.pom-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Fixed width, not flex:1 stretch — more tabs (audio/settings) means the
+   row overflows and scrolls instead of every tab getting squeezed thinner.
+   Width comes from padding + content now (was a bare min-width with no
+   padding, which let long labels like "Settings" touch the button edges). */
+.pom-tabs button {
+  flex: 0 0 auto;
+  min-width: 64px;
+  min-height: 44px;
+  padding: 0 0.9rem;
+  white-space: nowrap;
+  background: none;
+  border: none;
+  color: inherit;
+  opacity: 0.6;
+}
+
+.pom-tabs button.active {
+  opacity: 1;
+  border-bottom: 2px solid var(--pom-color-accent);
+}
+
+.pom-tab {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pom-hint {
+  opacity: 0.7;
+  text-align: center;
+  padding: 1rem;
+}
+
+/* Name accordion */
+
+.pom-name-header {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.pom-name-portrait {
+  flex: 0 0 auto;
+  width: auto;
+  height: var(--pom-min-name-trigger, 36px);
+  aspect-ratio: 1 / 1;
+  object-fit: cover;
+  object-position: top;
+  border-radius: var(--pom-radius-btn);
+  outline: 2px solid var(--pom-color-accent);
+  outline-offset: -1px;
+}
+
+.pom-name-header:has(.pom-name-details) .pom-name-portrait {
+  height: calc(var(--pom-min-name-trigger, 36px) + var(--pom-font-name-details, 0.85rem) * 1.6 + 0.5rem);
+}
+
+.pom-name-text {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.pom-name-trigger {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: var(--pom-min-name-trigger, 36px);
+  background: none;
+  border: none;
+  color: var(--pom-color-title);
+  font-size: var(--pom-font-name-trigger, 1.05rem);
+  padding: 0.25rem 0;
+}
+
+.pom-name-details {
+  display: flex;
+  gap: 0.75rem;
+  font-size: var(--pom-font-name-details, 0.85rem);
+  opacity: 0.8;
+  margin-bottom: 0.5rem;
+  color: var(--pom-color-title-accent);
+  font-weight: 600;
+}
+
+/* Stats row (read-only) + speed/luck/xp row */
+
+.pom-stats-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  margin: 0.4rem 0;
+}
+
+.pom-stat {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--pom-min-stat, 44px);
+  background: var(--pom-color-1);
+  border-radius: var(--pom-radius-btn);
+  padding: 0.25rem 0.15rem;
+}
+
+.pom-stat-abbr {
+  font-size: var(--pom-font-stat-abbr, 0.7rem);
+  color: var(--pom-color-1-text);
+  opacity: 0.7;
+  text-transform: uppercase;
+}
+
+.pom-stat-value {
+  color: var(--pom-color-1-text);
+  font-weight: bold;
+}
+
+/* Resources (HP/Fatigue/Mana) + Speed/Luck/XP share one grid — resources
+   first, substats after, in original order. Even columns (1fr each) so
+   the two groups line up into shared rows instead of stacking separately.
+   Speed/Luck/XP reuse the .pom-resource/.pom-resource-label/.pom-resource-value
+   classes below instead of a parallel .pom-stat-based set — one class family,
+   no drift between the two groups. */
+.pom-resource-substat-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  margin: 0.5rem 0;
+}
+
+/* Landscape has exactly 3 rest widths (see companion-app.mjs
+   _wireResizeHandle): closed (hidden), half-open (~157px of usable panel
+   width), fully open (~314px). 250px sits strictly between those last two,
+   so 2-col only ever shows at fully-open — half-open reliably reads as 1
+   column, not just "sometimes, depending on where you released". */
+@container (min-width: 250px) {
+  .pom-resource-substat-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.pom-resource {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+  padding: var(--px-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+}
+
+.pom-resource-label {
+  order: 1;
+  flex: 1 0 100%;
+  font-size: var(--pom-font-resource-label, 0.75rem);
+  color: var(--pom-color-resource-label);
+  opacity: 0.75;
+  text-align: center;
+}
+
+.pom-resource-value {
+  order: 3;
+  flex: 1 1 auto;
+  text-align: center;
+  font-size: var(--pom-font-resource-value, 0.85rem);
+  font-weight: bold;
+  color: var(--pom-color-resource-value);
+}
+
+/* Buttons flank the value: -[minus] value [plus]- via display:contents so
+   they become direct flex items of .pom-resource instead of a boxed group. */
+.pom-resource-controls {
+  display: contents;
+}
+
+.pom-resource-controls button {
+  /* flex: 0 0 auto; */
+  min-width: var(--pom-min-resource-btn);
+  min-height: var(--pom-min-resource-btn);
+  /* Core's bare "button" rule (foundry2.css) sets background/border/color/
+     padding/border-radius on every button — this class+element selector
+     beats it on specificity but only for properties actually declared
+     here, so without these the +/- buttons render as unthemed gray
+     Foundry pills instead of matching the dark resource row. */
+  padding: 0;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+}
+
+.pom-resource-controls button[data-delta="-1"] {
+  order: 2;
+}
+
+.pom-resource-controls button[data-delta="1"] {
+  order: 4;
+}
+
+/* Section labels + checks (saves/skills/attack skills) */
+
+.pom-section-label {
+  font-size: var(--pom-font-section-label, 0.8rem);
+  color: var(--pom-color-title-accent);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  opacity: 1.0;
+  margin: 0.75rem 0 0.3rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-bottom: var(--p-2);
+  margin-bottom: var(--m-2);
+  border-bottom: 1px solid var(--pom-color-title-accent);
+}
+
+.pom-section-sub {
+  text-transform: none;
+  opacity: 0.8;
+  font-size: 0.75rem;
+}
+
+/* Traits/Features section labels carry a single icon (ancestry/class image
+   — same for every row underneath, so it lives on the header, not each
+   accordion item). Overrides the label+sub space-between layout: just an
+   icon followed by the label text here. */
+.pom-section-label.pom-section-label-img {
+  justify-content: flex-start;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.pom-section-label-img img {
+  width: var(--pom-list-img-size, 28px);
+  height: var(--pom-list-img-size, 28px);
+  border-radius: var(--pom-radius-img);
+  object-fit: cover;
+}
+
+/* Inventory/Magic section headers double as accordion triggers — chevron
+   first, then label. Overrides .pom-section-label's flex (combo selector
+   beats it on specificity regardless of source order) since there's just
+   the one button child here, not a label+sub pair. */
+.pom-section-label.pom-accordion-section {
+  display: block;
+  padding: 0;
+}
+
+.pom-section-trigger {
+  width: 100%;
+  min-height: 32px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.35rem;
+  background: none;
+  border: none;
+  padding: 0;
+  color: inherit;
+  font: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+}
+
+.pom-section-trigger-label {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+}
+
+.pom-chevron {
+  flex: 0 0 auto;
+}
+
+.pom-section-slots {
+  flex: 0 0 auto;
+  opacity: 0.75;
+  font-weight: normal;
+}
+
+/* Saves row: 1 col by default (matches every other grid at half-open), 3
+   at fully-open. Grid (not the auto-fit/minmax trick used by .pom-grid-*
+   below) since saves are few and fixed in count (3 on most systems) — an
+   explicit column count reads cleaner than minmax's continuous reflow for
+   a row this short. Same 250px breakpoint as .pom-resource-substat-grid,
+   see the comment there. */
+.pom-checks-row {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.4rem;
+}
+
+@container (min-width: 250px) {
+  .pom-checks-row {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Responsive tile/list grids — stack from up to 3 columns down to 1 off the
+   dock's actual rendered width (auto-fit + minmax) in landscape. Portrait
+   overrides to a fixed 2 columns below, matching saves' fixed 3 (see
+   .pom-checks-row above). */
+.pom-grid-skills,
+.pom-grid-attack-skills,
+.pom-grid-equipped,
+.pom-grid-spells,
+.pom-grid-inventory,
+.pom-grid-magic {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+}
+
+.pom-grid-equipped,
+.pom-grid-spells,
+.pom-grid-inventory,
+.pom-grid-magic {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+/* Portrait: fixed 2 columns for every tile grid, regardless of width. */
+@media (orientation: portrait) {
+  .pom-grid-skills,
+  .pom-grid-attack-skills,
+  .pom-grid-equipped,
+  .pom-grid-spells,
+  .pom-grid-inventory,
+  .pom-grid-magic {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Landscape only: bump skills/attack-skills to the same 110px basis as the
+   other tile grids (portrait keeps its own 90px above — smaller/denser
+   checks read fine at portrait's much greater available width, and
+   portrait wasn't asked to change). At landscape's 350px max panel width
+   110px caps these at 2 columns instead of 90px's 3, matching "2 columns
+   stack to 1" for every grid except saves (3 columns, see .pom-checks-row
+   above). */
+@media (orientation: landscape) {
+  .pom-grid-skills,
+  .pom-grid-attack-skills {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  }
+}
+
+.pom-check {
+  min-height: var(--pom-min-check, 44px);
+  height: auto;
+  flex: 1 1 70px;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+  padding: 0.2rem;
+  /* Chromium's UA stylesheet forces white-space:pre on <button> — text
+     never wraps, it just overflows sideways instead of the box growing
+     taller. .pom-check is a <button> (see companion-sheet.hbs), so this
+     must be reset explicitly. */
+  white-space: normal;
+}
+
+.pom-grid-skills .pom-check,
+.pom-grid-attack-skills .pom-check {
+  flex: unset;
+}
+
+.pom-check-label {
+  font-size: var(--pom-font-check-label, 0.75rem);
+  color: var(--pom-color-1-text);
+  text-align: center;
+}
+
+.pom-check-value {
+  color: var(--pom-color-1-text);
+  font-weight: bold;
+}
+
+/* Weapon/spell/inventory/magic/journal grids */
+
+.pom-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  gap: 0.5rem;
+  width: 100%;
+  font-size: var(--pom-font-list-item);
+  min-height: var(--pom-min-list-item);
+  height: auto;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+  margin-bottom: 0.35rem;
+  padding: 0.2rem 0.5rem;
+  /* Same <button> white-space:pre reset as .pom-check. */
+  white-space: normal;
+}
+
+.pom-list-item img {
+  width: var(--pom-list-img-size, 28px);
+  height: var(--pom-list-img-size, 28px);
+  border-radius: var(--pom-radius-img);
+  object-fit: cover;
+}
+
+.pom-list-item.selected,
+.pom-list-item.targeted {
+  outline: 2px solid var(--pom-color-accent);
+}
+
+.pom-qty {
+  margin-left: auto;
+  opacity: 0.7;
+}
+
+/* Inventory/magic/spell rows double as accordion triggers on long-press
+   (see companion-app.mjs _toggleAccordion) — the wrapper is the actual grid
+   cell so it can break out to a full-width row (grid-column: 1 / -1) once
+   expanded, giving the item's description room regardless of how many tile
+   columns the grid is currently showing. */
+.pom-list-item-wrap.pom-expanded {
+  grid-column: 1 / -1;
+}
+
+/* Icon-only row atop an expanded item's info — mirrors vagabond's own
+   right-click context menu (Use/Send to Chat/Equip-Unequip/Bind/Edit/Delete),
+   see buildItemActions() in vagabond-adapter.mjs. No labels, icons only, per
+   the reference layout — title/aria-label carry the text for a11y. */
+.pom-item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
+.pom-item-action {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+}
+
+/* Accordions (traits/features/perks) */
+
+.pom-accordion {
+  margin: 0.25rem 0;
+}
+
+.pom-accordion-item {
+  border-bottom: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.pom-accordion-title {
+  display: block;
+  width: 100%;
+  text-align: left;
+  min-height: var(--pom-min-accordion-title, 40px);
+  background: none;
+  border: none;
+  color: var(--pom-color-title);
+  font-size: var(--pom-font-accordion-title, 0.9rem);
+  padding: 0.25rem 0;
+}
+
+.pom-accordion-body {
+  font-size: var(--pom-font-accordion-body, 0.85rem);
+  opacity: 0.9;
+  padding: 0 0 0.5rem;
+  line-height: 1.4;
+}
+
+/* Long-press context menu (inventory/magic/chat) — plain floating popup,
+   not core's desktop-oriented right-click ContextMenu. */
+
+.pom-item-menu {
+  display: flex;
+  flex-direction: column;
+  background: var(--pom-color-overlay-bg, #222);
+  border: var(--b-1);
+  border-radius: 6px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.pom-item-menu button {
+  min-height: 44px;
+  min-width: 120px;
+  background: none;
+  border: none;
+  color: var(--pom-color-overlay-text, #eee);
+  text-align: left;
+  padding: 0 0.75rem;
+}
+
+.pom-item-menu button:not(:last-child) {
+  border-bottom: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.15));
+}
+
+/* Chat tab */
+
+.pom-tab-chat {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+.pom-chat-log {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  padding: 0.5rem 0.75rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.pom-chat-log .chat-message {
+  font-size: var(--pom-font-chat, 0.85rem);
+  margin-bottom: 0.5rem;
+}
+
+.pom-chat-input {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.15));
+}
+
+.pom-chat-input input {
+  flex: 1 1 auto;
+  min-height: 44px;
+}
+
+.pom-chat-input button {
+  min-height: 44px;
+}
+
+/* Generic fallback adapter */
+
+.pom-generic-fields {
+  list-style: none;
+  margin: 0.5rem 0;
+  padding: 0;
+}
+
+.pom-generic-fields li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  border-bottom: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.pom-raw-roll {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.pom-raw-roll input {
+  flex: 1 1 auto;
+  min-height: 44px;
+}
+
+.pom-raw-roll button {
+  min-height: 44px;
+}
+
+/* GM device-control panel */
+
+.pom-device-control .pom-device-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.pom-device-control .pom-device-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+/* Portrait: fixed rem sizes, same knob pattern as --pom-font-list-item
+   (line 148) — no container-query clamp. Tune the numbers directly here
+   per grid instead of computing off column count. */
+@media (orientation: portrait) {
+  .pom-grid-skills .pom-check-label,
+  .pom-grid-attack-skills .pom-check-label { font-size: 1.3rem; }
+  .pom-grid-skills .pom-check-value,
+  .pom-grid-attack-skills .pom-check-value { font-size: 1.4rem; }
+}
+
+/* Actor picker */
+
+.pom-actor-pick ul {
+  list-style: none;
+  margin: 0;
+  padding: 1rem;
+}
+
+.pom-actor-pick button {
+  width: 100%;
+  min-height: 48px;
+  margin-bottom: 0.5rem;
+}
+
+/* Audio tab — GM playlist/sound control */
+
+.pom-audio-playlist {
+  border: var(--b-1);
+  /* Capped, not the raw --pom-radius-btn — in Round style that's 999px,
+     which on a short multi-row header+body box (not a single-line pill
+     button) curves the corner in far enough to clip the header's own
+     text/icon against this element's overflow:hidden. */
+  border-radius: min(var(--pom-radius-btn), 16px);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.pom-audio-playlist-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--pom-color-surface-1);
+}
+
+.pom-audio-playlist-name {
+  font-weight: 600;
+  color: var(--pom-color-title);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pom-audio-sound-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.75rem;
+  border-top: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.08));
+}
+
+.pom-audio-sound-name {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pom-audio-volume {
+  flex: 0 0 96px;
+}
+
+.pom-audio-playbtn {
+  flex: 0 0 auto;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: var(--pom-radius-btn);
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  color: var(--pom-color-1-text);
+}
+
+.pom-audio-empty {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+}
+
+/* Settings tab — two accordion groups (module settings / Foundry settings) */
+
+.pom-settings-group {
+  border: var(--b-1);
+  /* Capped — see .pom-audio-playlist above, same accordion-header clipping
+     issue in Round style. */
+  border-radius: min(var(--pom-radius-btn), 16px);
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+}
+
+.pom-settings-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  width: 100%;
+  min-height: var(--pom-min-accordion-title, 40px);
+  text-align: left;
+  background: var(--pom-color-1);
+  border: none;
+  color: var(--pom-color-1-text);
+  font-size: var(--pom-font-accordion-title, 0.9rem);
+  padding: 0.4rem 0.75rem;
+}
+
+.pom-settings-group-body {
+  padding: 0.25rem 0.75rem 0.5rem;
+}
+
+.pom-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--pom-color-border-soft, rgba(255, 255, 255, 0.08));
+  font-size: var(--pom-font-accordion-body, 0.85rem);
+}
+
+.pom-setting-row:last-child {
+  border-bottom: none;
+}
+
+.pom-setting-row-block {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.pom-setting-hint {
+  opacity: 0.6;
+  font-size: 0.8em;
+}
+
+/* On/off pill toggle, used for both module and Foundry settings rows. */
+.pom-toggle {
+  flex: 0 0 auto;
+  position: relative;
+  width: 52px;
+  min-width: 52px;
+  height: 30px;
+  min-height: 30px;
+  border-radius: 999px;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+}
+
+.pom-toggle::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform 0.15s ease-out;
+}
+
+.pom-toggle.on {
+  background: var(--pom-color-accent);
+}
+
+.pom-toggle.on::after {
+  transform: translateX(22px);
+}
+
+/* Theme picker — three independent rows (color / mode / style), each a set
+   of tappable swatches wired to companionThemeColor/Mode/Style (see
+   companion-app.mjs _onSetThemeColor/-Mode/-Style + companion-sheet.hbs). */
+.pom-swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.4rem 0;
+}
+
+.pom-swatch {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: var(--pom-radius-btn);
+  border: var(--b-1);
+  opacity: 0.85;
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 600;
+}
+
+.pom-swatch.selected {
+  opacity: 1;
+  outline: 2px solid var(--pom-color-accent);
+  outline-offset: 2px;
+}
+
+/* Color swatches — a two-tone chip (panel bg -> accent) previewing each
+   theme's identity without needing the theme itself to be active. */
+.pom-swatch-forest { background: linear-gradient(135deg, #16241a, #4fbf6f); }
+.pom-swatch-ocean { background: linear-gradient(135deg, #0f2733, #2fa8d6); }
+.pom-swatch-sunset { background: linear-gradient(135deg, #241713, #ff6a3d); }
+.pom-swatch-sakura { background: linear-gradient(135deg, #241620, #ff5f9e); }
+.pom-swatch-oldschool { background: linear-gradient(135deg, #000, #fff); }
+
+/* Mode swatches — auto-width text pills ("Dark"/"Light"), not fixed 40px
+   squares, since they carry a label rather than a color sample. */
+.pom-swatch-mode-dark,
+.pom-swatch-mode-light {
+  width: auto;
+  height: auto;
+  min-width: 64px;
+  min-height: 36px;
+  padding: 0 0.75rem;
+}
+.pom-swatch-mode-dark { background: #1e1e1e; color: #eee; }
+.pom-swatch-mode-light { background: #f4f2ef; color: #1c1c1c; }
+
+/* Style swatches share the mode swatches' neutral fill (the shape itself is
+   the point) but pick up each style's own corner radius directly, so the
+   button previews exactly what selecting it will do everywhere else. */
+.pom-swatch-style {
+  background: var(--pom-color-surface-3);
+}
+.pom-swatch-style-round { border-radius: 999px; }
+.pom-swatch-style-smooth { border-radius: 10px; }
+.pom-swatch-style-square { border-radius: 0; }
+
+/* Handedness swatches — same auto-width text pill as the mode swatches
+   ("Right"/"Left"), neutral fill like the style swatches (no per-choice
+   color meaning here, just a two-way pick). */
+.pom-swatch-handedness {
+  width: auto;
+  height: auto;
+  min-width: 64px;
+  min-height: 36px;
+  padding: 0 0.75rem;
+  background: var(--pom-color-surface-3);
+  color: var(--pom-color-text, #eee);
+}
+
+.pom-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.pom-slider-row input[type="range"] {
+  flex: 1 1 auto;
+  min-height: 32px;
+}
+
+.pom-nib-sensitivity-value {
+  flex: 0 0 auto;
+  min-width: 2.4em;
+  text-align: right;
+  opacity: 0.8;
+}
+
+/* Foreign settings (any OTHER module/system's own player-facing settings,
+   surfaced generically — see foundry-settings-panel.mjs). Select shares
+   the text-input look; the "menu" button (opens that module's own
+   configuration app, e.g. vagabond's HUD Display config) is full-width
+   since its label doubles as the row's only content. */
+.pom-foreign-input,
+.pom-setting-row select {
+  min-height: 40px;
+  width: 100%;
+  margin-top: 0.3rem;
+  background: var(--pom-color-surface-2);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-title);
+  padding: 0 0.5rem;
+}
+
+.pom-menu-button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0.3rem;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+}
+
+@media (orientation: portrait) {
+  .pom-audio-playlist-name,
+  .pom-audio-sound-name,
+  .pom-setting-row {
+    font-size: 1.05rem;
+  }
+
+  .pom-setting-hint {
+    font-size: 0.9rem;
+  }
+}
+
+/* ============================================================
+   FOUNDRY JOIN/LOGIN SCREEN — mobile fix. Runs pre-login, before
+   body.pom-companion-mode exists (added later by
+   scripts/companion/companion-controller.mjs), so gated on
+   viewport width + core's own body.join, not our client-detect
+   class. Core's #join-game (public/less2/views/join.less) is a
+   hardcoded 2-col grid with no responsive breakpoint — squeezes
+   the login form and world details side by side on phone widths.
+   #notifications also loses too much space to its desktop-tuned
+   `padding: 0 20%` on narrow screens, cramping the login error
+   toast. Module CSS loads after core CSS, so same-specificity
+   selectors below win by source order without !important. */
+@media (max-width: 700px) {
+  body.join #join-game {
+    grid-template-columns: 1fr;
+    grid-template-rows: none;
+  }
+
+  body.join #join-game-world {
+    grid-row: auto;
+    grid-column: auto;
+  }
+
+  body.join #notifications {
+    padding: 0 5%;
+  }
+}

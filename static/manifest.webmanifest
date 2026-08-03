@@ -1,0 +1,16 @@
+{
+  "name": "Play on Mobile",
+  "short_name": "Play on Mobile",
+  "start_url": "/join",
+  "display": "standalone",
+  "background_color": "#1e1e1e",
+  "theme_color": "#1e1e1e",
+  "icons": [
+    {
+      "src": "/modules/play-on-mobile/static/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

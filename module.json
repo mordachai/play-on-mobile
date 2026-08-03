@@ -1,0 +1,40 @@
+{
+  "id": "play-on-mobile",
+  "title": "Play on Mobile",
+  "version": "0.1.0",
+  "compatibility": {
+    "minimum": "13",
+    "verified": "14"
+  },
+  "authors": [
+    {
+      "name": "Gus",
+      "flags": {}
+    }
+  ],
+  "esmodules": [
+    "scripts/play-on-mobile.mjs"
+  ],
+  "styles": [
+    "styles/companion.css"
+  ],
+  "languages": [
+    {
+      "lang": "en",
+      "name": "English",
+      "path": "lang/en.json"
+    }
+  ],
+  "relationships": {
+    "systems": [
+      {
+        "id": "vagabond",
+        "type": "system",
+        "compatibility": {}
+      }
+    ]
+  },
+  "socket": true,
+  "flags": {},
+  "description": "A phone-friendly companion view of the canvas: simplified system-agnostic sheet (tap-to-roll, token list, target list, movement d-pad) docked alongside a live, touch-pannable map. First-class support for the vagabond system; other systems get a generic read-only fallback."
+}
