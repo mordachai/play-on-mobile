@@ -37,7 +37,15 @@ This module doesn't try to put the whole Foundry desktop UI on a phone screen �
 - **Installable as a PWA** — add it to the home screen, it survives reconnects, and a wake lock keeps the screen from sleeping mid-session.
 - **GM-side troubleshooting** — GM-only, scoped to your own world: toggle companion mode for one of your connected players' devices if their screen gets stuck, and optionally apply a standard set of your table's own display settings the moment it activates. 
 
-Built-in, first-class support ships for the [Vagabond](https://foundryvtt.com/packages/vagabond) system. Any other system gets a generic read-only fallback (flattened `actor.system` fields, plus raw-formula rolling) until someone adds a descriptor for it — see [Adapting a system](docs/adapting-a-system.md) below.
+Any system gets a generic read-only fallback (flattened `actor.system` fields, plus raw-formula rolling) out of the box. Systems below ship with a built-in, first-class descriptor instead — see [Adapting a system](docs/adapting-a-system.md) below to add your own.
+
+## Supported systems
+
+ - [**Vagabond**](https://foundryvtt.com/packages/vagabond)
+ - [**Old School Essentials**](https://foundryvtt.com/packages/ose)
+ - [**Alien RPG (Evolved)**](https://foundryvtt.com/packages/alienrpg)
+
+Don't see your system? It still works via the generic fallback, and adding a real descriptor is usually a JSON file — no code required. See [Adapting a system](docs/adapting-a-system.md).
 
 ## Requirements
 

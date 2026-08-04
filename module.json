@@ -1,7 +1,7 @@
 {
   "id": "play-on-mobile",
   "title": "Play on Mobile",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -35,5 +35,5 @@
   "description": "A phone-friendly companion view of the canvas: simplified sheet (tap-to-roll, tap-to-move, double-tap-to-target) docked alongside a live, touch-pannable map. Sheet layout and rolls are driven by a per-system JSON descriptor — vagabond ships built in; other systems get a read-only fallback until a descriptor is added for them, either by this module or by the system/module itself via the play-on-mobile API.",
   "url": "https://github.com/mordachai/play-on-mobile",
   "manifest": "https://github.com/mordachai/play-on-mobile/releases/latest/download/module.json",
-  "download": "https://github.com/mordachai/play-on-mobile/releases/download/v0.5.0/module.zip"
+  "download": "https://github.com/mordachai/play-on-mobile/releases/download/v0.5.1/module.zip"
 }

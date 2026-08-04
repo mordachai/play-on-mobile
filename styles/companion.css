@@ -527,6 +527,18 @@ body.pom-companion-mode .pom-dialog-fit {
   max-height: 90vh !important;
 }
 
+/* Core's `.window-content` is `overflow: hidden` by default (foundry2.css) —
+   fine at desktop dialog sizes, but pom-dialog-fit's 90%-height box is often
+   smaller than a system's dialog content (e.g. alienrpg's weapon roll dialog
+   with its range/cover/size/aim/modifier fields), so content was silently
+   clipped with no way to reach the rest. `hidden` also isn't `auto`/`scroll`,
+   so dialog-scroll.mjs's findScrollable() couldn't detect it as scrollable
+   for the touch-drag fallback either. auto here fixes both: native scroll
+   works, and the touch-drag fallback now finds it too. */
+body.pom-companion-mode .pom-dialog-fit .window-content {
+  overflow-y: auto !important;
+}
+
 body.pom-companion-mode .application:not(.pom-companion-app) button,
 body.pom-companion-mode .application:not(.pom-companion-app) input,
 body.pom-companion-mode .application:not(.pom-companion-app) select {

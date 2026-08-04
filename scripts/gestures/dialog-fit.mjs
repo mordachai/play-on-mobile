@@ -19,16 +19,41 @@ export function initDialogFit() {
   Hooks.on("renderApplicationV2", (_app, el) => {
     if (!el || el.classList.contains("pom-companion-app")) return;
     if (!document.body.classList.contains("pom-companion-mode")) return;
+    // renderApplicationV2 also fires for core's persistent UI chrome (sidebar,
+    // scene-navigation, hotbar, players, scene-controls, sidebar sub-tabs like
+    // Placeables' "tokens-tab", ...) — those are ApplicationV2 instances too,
+    // but not floating dialogs/sheets, and any system could add its own such
+    // chrome. They all live inside #interface; real windows (dialogs,
+    // actor/item sheets, from any system) render directly under <body>.
+    // Confirmed live: alienrpg's weapon roll DialogV2 parents to body, while
+    // #sidebar/#scene-navigation/tokens-tab/etc. parent to #interface — skip
+    // the latter so they don't get pom-dialog-fit's position:fixed/inset
+    // treatment.
+    if (el.closest("#interface")) return;
 
-    const descriptor = getActiveDescriptor();
-    const native = descriptor?.dialogs?.selfPositioned ?? [];
-    const isNative = native.some((sel) => matchesSafely(el, sel));
-    el.classList.add(isNative ? "pom-dialog-native" : "pom-dialog-fit");
+    tagAndWire(el);
 
-    if (descriptor?.dialogs?.collapsePanel !== false) collapseCompanionPanel();
-
-    if (!el.querySelector(".window-header")) wireFramelessDrag(el, descriptor);
+    // Some core UI chrome (confirmed: the Placeables sidebar tab's
+    // "tokens-tab" sub-app) fires this hook BEFORE Foundry has actually
+    // inserted it into #interface — closest("#interface") reads false at
+    // hook time here but true one frame later. Recheck next frame and undo
+    // the fit/native tagging if it turns out to be chrome after all, so the
+    // timing gap above doesn't leave a stray class on core UI permanently.
+    requestAnimationFrame(() => {
+      if (el.closest("#interface")) el.classList.remove("pom-dialog-fit", "pom-dialog-native");
+    });
   });
+}
+
+function tagAndWire(el) {
+  const descriptor = getActiveDescriptor();
+  const native = descriptor?.dialogs?.selfPositioned ?? [];
+  const isNative = native.some((sel) => matchesSafely(el, sel));
+  el.classList.add(isNative ? "pom-dialog-native" : "pom-dialog-fit");
+
+  if (descriptor?.dialogs?.collapsePanel !== false) collapseCompanionPanel();
+
+  if (!el.querySelector(".window-header")) wireFramelessDrag(el, descriptor);
 }
 
 function matchesSafely(el, selector) {
