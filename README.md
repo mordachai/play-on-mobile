@@ -62,7 +62,9 @@ Then enable **Play on Mobile** in your world's Manage Modules list.
 
 ## Using it
 
-Companion mode is a per-client setting — each player (or the GM, testing) turns it on for their own device in **Configure Settings → Play on Mobile**, then reloads. It binds to whichever actor is set as that user's default character, or a specific actor a GM has bound for them.
+Open Foundry on a phone and it just asks: *"Looks like you're on a mobile device. Activate mobile mode?"* Tap Yes, done. Say no once and it won't ask that browser again — turn it on later on settings if you change your mind, read below.
+
+Mobile mode is otherwise a per-client setting — each player (or the GM, testing) can also turn it on manually for their own device in **Configure Settings → Play on Mobile**, then reload. It binds to whichever actor is set as that user's default character, or a specific actor a GM has bound for them.
 
 A GM can also force it on/off remotely for a connected player's device via **Configure Settings → Play on Mobile → Player Device Control** — useful when a player's screen is stuck and they can't toggle it themselves.
 

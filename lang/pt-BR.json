@@ -1,9 +1,9 @@
 {
-  "PLAYONMOBILE.Settings.CompanionMode.Name": "Modo Companion (Celular)",
+  "PLAYONMOBILE.Settings.CompanionMode.Name": "Modo Mobile",
   "PLAYONMOBILE.Settings.CompanionMode.Hint": "Substitui a interface normal do Foundry nesta sessão do navegador por uma ficha simplificada e otimizada para toque. Indicado para celular sem canvas. Afeta apenas este cliente — outros jogadores não são afetados.",
   "PLAYONMOBILE.Settings.KeepAwake.Name": "Manter Tela Ativa",
   "PLAYONMOBILE.Settings.KeepAwake.Hint": "Solicita um wake lock neste dispositivo para que a tela não durma durante o jogo. Ative no seu celular.",
-  "PLAYONMOBILE.Settings.Handedness.Name": "Lateralidade do Painel Companion",
+  "PLAYONMOBILE.Settings.Handedness.Name": "Lateralidade do Painel Mobile",
   "PLAYONMOBILE.Settings.Handedness.Hint": "Somente paisagem: em qual borda ficam a doca e sua aba, e qual mão a controla com o polegar. A alça de pan sempre fica na borda oposta.",
   "PLAYONMOBILE.Settings.Handedness.Right": "Destro (doca à direita)",
   "PLAYONMOBILE.Settings.Handedness.Left": "Canhoto (doca à esquerda)",
@@ -33,5 +33,7 @@
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Sensibilidade da Alça de Pan",
   "PLAYONMOBILE.Companion.Settings.FastRolls": "Rolagens Rápidas",
   "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Pula a caixa de diálogo de configuração de rolagem do sistema, quando possível. Só afeta sistemas cuja ficha do companion declara um atalho de rolagem rápida.",
-  "PLAYONMOBILE.Companion.UnsupportedSystem": "Este sistema ainda não tem suporte específico. Mostrando apenas dados brutos."
+  "PLAYONMOBILE.Companion.UnsupportedSystem": "Este sistema ainda não tem suporte específico. Mostrando apenas dados brutos.",
+  "PLAYONMOBILE.MobileDetect.Title": "Play on Mobile",
+  "PLAYONMOBILE.MobileDetect.Content": "Parece que você está em um dispositivo móvel. Ativar o modo mobile?"
 }

@@ -1,5 +1,6 @@
 import { MODULE_ID, registerSettings } from "./settings.mjs";
 import { CompanionController } from "./companion/companion-controller.mjs";
+import { maybePromptMobileActivation } from "./companion/mobile-detect.mjs";
 import { registerServiceWorker } from "./pwa/register-sw.mjs";
 import { initReconnectOverlay } from "./pwa/reconnect-overlay.mjs";
 import { initWakeLock } from "./pwa/wake-lock.mjs";
@@ -76,6 +77,7 @@ Hooks.on("ready", () => {
   // system's own init/ready) to be available — hence "ready", not "init".
   initDeviceControlSocket();
   CompanionController.maybeActivate();
+  maybePromptMobileActivation();
   registerServiceWorker();
   initReconnectOverlay();
   initWakeLock();
