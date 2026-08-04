@@ -45,6 +45,11 @@ function validateAction(def, path, errors) {
     if (!def.path) errors.push(`${path}: action "toggle" requires "path"`);
   } else if (def.action === "invoke") {
     validateInvoke(def.invoke, `${path}.invoke`, errors);
+  } else if (def.action === "cycle") {
+    if (!def.path) errors.push(`${path}: action "cycle" requires "path"`);
+    if (!Array.isArray(def.states) || !def.states.length) {
+      errors.push(`${path}: action "cycle" requires a non-empty "states" array`);
+    }
   } else {
     errors.push(`${path}: unknown action.action "${def.action}"`);
   }

@@ -4,12 +4,14 @@ import { validateDescriptor } from "./validate-descriptor.mjs";
 import { MODULE_ID } from "../settings.mjs";
 import vagabondDescriptor from "../../systems/vagabond.json" with { type: "json" };
 import oseDescriptor from "../../systems/ose.json" with { type: "json" };
+import alienrpgDescriptor from "../../systems/alienrpg.json" with { type: "json" };
 
 // Shipped, built-in descriptors — precedence tier 3. See
 // docs/system-adapters-plan.md §7 for the full precedence order.
 const SHIPPED = {
   vagabond: vagabondDescriptor,
   ose: oseDescriptor,
+  alienrpg: alienrpgDescriptor,
 };
 
 // isAvailable overrides for shipped descriptors — game.system.id alone isn't

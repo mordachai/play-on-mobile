@@ -108,7 +108,7 @@
           {{#each this.entries}}
           <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
             <button type="button" class="pom-list-item" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-longpress-toggle="1">
-              {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
+              {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.status}}<span class="pom-status-pill">{{this.status}}</span>{{/if}}{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
             </button>
             {{#if this.open}}
             <div class="pom-accordion-body pom-item-info">
@@ -137,7 +137,7 @@
           {{#each this.entries}}
           <div class="pom-list-item-wrap{{#if this.open}} pom-expanded{{/if}}">
             <button type="button" class="pom-list-item" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-longpress-toggle="1">
-              {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
+              {{#if this.img}}<img src="{{this.img}}" alt="">{{/if}}<span>{{this.label}}</span>{{#if this.status}}<span class="pom-status-pill">{{this.status}}</span>{{/if}}{{#if this.qty}}<span class="pom-qty">&times;{{this.qty}}</span>{{/if}}
             </button>
             {{#if this.open}}
             <div class="pom-accordion-body pom-item-info">

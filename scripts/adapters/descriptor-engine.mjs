@@ -165,6 +165,20 @@ function buildItemActions(section, item, itemCtx, ctx) {
         },
       ];
     }
+    if (def && typeof def === "object" && def.action === "cycle") {
+      const states = def.states ?? [];
+      const current = String(getProperty(item, def.path) ?? "");
+      const idx = states.findIndex((s) => String(s.value) === current);
+      const next = states[(idx + 1 + states.length) % states.length] ?? states[0];
+      if (!next) return [];
+      return [
+        {
+          icon: next.icon ?? "fas fa-arrows-rotate",
+          label: next.label ? `Move to ${next.label}` : "Cycle",
+          onSelect: () => item.update({ [def.path]: next.value }),
+        },
+      ];
+    }
     if (def && typeof def === "object" && def.action === "invoke") {
       return [
         {
@@ -191,6 +205,10 @@ async function buildItemEntry(section, item, ctx) {
   const itemCtx = { ...ctx, item, sectionId: section.id };
   const entry = { id: item.id, label: item.name, img: item.img };
   if (section.qty) entry.qty = resolveExpr(section.qty, itemCtx);
+  if (section.status) {
+    const key = resolveExpr(section.status.source, itemCtx);
+    entry.status = resolveLabelFrom(section.status, key, ctx);
+  }
   if (section.description) {
     const raw = resolveExpr(section.description, itemCtx);
     entry.description = await ctx.enrichHTML(raw, ctx.actor);

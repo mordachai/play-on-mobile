@@ -1,0 +1,167 @@
+{
+  "formatVersion": 1,
+  "system": "alienrpg",
+  "label": "Alien RPG (Evolved)",
+  "invokeModule": "/modules/play-on-mobile/scripts/adapters/invokes/alienrpg.mjs",
+  "snapshot": { "custom": "readSnapshot" },
+
+  "header": {
+    "subtitle": [
+      "@items.specialty.name",
+      "@system.general.career.value"
+    ]
+  },
+
+  "sections": [
+    {
+      "id": "attributes",
+      "render": "stat-row",
+      "hideIfEmpty": false,
+      "source": "@system.attributes",
+      "value": "@.mod",
+      "abbr": { "config": "ALIENRPG.mobileAttrAbbr" },
+      "invoke": { "kind": "custom", "fn": "rollAttribute" }
+    },
+
+    {
+      "id": "vitals",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "health", "label": "Health", "value": "@system.header.health.value", "max": "@system.header.health.calculatedMax", "write": "system.header.health.value", "min": 0, "editable": true },
+        { "key": "stress", "label": "Stress", "value": "@system.header.stress.value", "write": "system.header.stress.value", "min": 0, "editable": true },
+        { "key": "resolve", "label": "Resolve", "value": "@system.header.resolve.calculatedMax" },
+        { "key": "radiation", "label": "Radiation", "value": "@system.general.radiation.value", "max": "@system.general.radiation.calculatedMax" }
+      ]
+    },
+
+    {
+      "id": "panicCheck",
+      "render": "check-grid",
+      "label": "Panic",
+      "hideIfEmpty": false,
+      "source": "@snap.checks.panic",
+      "value": "@.value",
+      "invoke": { "kind": "custom", "fn": "rollPanicCheck" }
+    },
+
+    {
+      "id": "resolveCheck",
+      "render": "check-grid",
+      "label": "Stress Response",
+      "hideIfEmpty": false,
+      "source": "@snap.checks.resolve",
+      "value": "@.value",
+      "invoke": { "kind": "custom", "fn": "rollResolveCheck" }
+    },
+
+    {
+      "id": "progression",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "xp", "label": "XP", "value": "@system.general.xp.value", "max": "@system.general.xp.max", "write": "system.general.xp.value", "min": 0, "editable": true },
+        { "key": "sp", "label": "Story Points", "value": "@system.general.sp.value", "max": "@system.general.sp.max", "write": "system.general.sp.value", "min": 0, "editable": true }
+      ]
+    },
+
+    {
+      "id": "consumables",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "air", "label": "Air", "value": "@system.consumables.air.value" },
+        { "key": "water", "label": "Water", "value": "@system.consumables.water.value" },
+        { "key": "food", "label": "Food", "value": "@system.consumables.food.value" },
+        { "key": "power", "label": "Power", "value": "@system.consumables.power.value" }
+      ]
+    },
+
+    {
+      "id": "skills",
+      "render": "check-grid",
+      "label": "Skills",
+      "hideIfEmpty": false,
+      "source": "@system.skills",
+      "value": "@.mod",
+      "labelFrom": { "config": "ALIENRPG.skills", "field": "name", "localize": true },
+      "invoke": { "kind": "custom", "fn": "rollSkill" }
+    },
+
+    {
+      "id": "weapons",
+      "render": "item-list",
+      "label": "Weapons",
+      "collapsible": true,
+      "where": { "type": "weapon" },
+      "qty": "@item.system.attributes.quantity.value",
+      "status": { "source": "@item.system.header.active", "config": "ALIENRPG.mobileActiveLabel" },
+      "description": "@item.system.notes",
+      "invoke": { "kind": "itemMethod", "path": "roll", "args": [false, {}] },
+      "actions": [{ "action": "cycle", "path": "system.header.active", "states": [
+        { "value": "true", "label": "Active", "icon": "fas fa-toggle-on" },
+        { "value": "false", "label": "Inactive", "icon": "fas fa-toggle-off" },
+        { "value": "fLocker", "label": "Foot Locker", "icon": "fas fa-box-archive" }
+      ] }, "edit", "delete"]
+    },
+
+    {
+      "id": "armor",
+      "render": "item-list",
+      "label": "Armor",
+      "collapsible": true,
+      "where": { "type": "armor" },
+      "status": { "source": "@item.system.header.active", "config": "ALIENRPG.mobileActiveLabel" },
+      "description": "@item.system.notes",
+      "invoke": { "kind": "custom", "fn": "rollArmor" },
+      "actions": [{ "action": "cycle", "path": "system.header.active", "states": [
+        { "value": "true", "label": "Active", "icon": "fas fa-toggle-on" },
+        { "value": "false", "label": "Inactive", "icon": "fas fa-toggle-off" },
+        { "value": "fLocker", "label": "Foot Locker", "icon": "fas fa-box-archive" }
+      ] }, "edit", "delete"]
+    },
+
+    {
+      "id": "gear",
+      "render": "item-list",
+      "label": "Gear",
+      "collapsible": true,
+      "where": { "type": "item" },
+      "qty": "@item.system.attributes.quantity.value",
+      "status": { "source": "@item.system.header.active", "config": "ALIENRPG.mobileActiveLabel" },
+      "description": "@item.system.notes",
+      "actions": ["toChat", { "action": "cycle", "path": "system.header.active", "states": [
+        { "value": "true", "label": "Active", "icon": "fas fa-toggle-on" },
+        { "value": "false", "label": "Inactive", "icon": "fas fa-toggle-off" },
+        { "value": "fLocker", "label": "Foot Locker", "icon": "fas fa-box-archive" }
+      ] }, "edit", "delete"]
+    },
+
+    {
+      "id": "talents",
+      "render": "entry-list",
+      "label": "Talents",
+      "source": "@itemsOfType.talent",
+      "name": "@.name",
+      "description": "@.system.general.comment.value"
+    },
+
+    {
+      "id": "agenda",
+      "render": "entry-list",
+      "label": "Personal Agenda",
+      "source": "@itemsOfType.agenda",
+      "name": "@.name",
+      "description": "@.system.general.comment.value"
+    },
+
+    {
+      "id": "criticalInjuries",
+      "render": "entry-list",
+      "label": "Critical Injuries",
+      "source": "@itemsOfType.critical-injury",
+      "name": "@.name",
+      "description": "@.system.attributes.effects"
+    }
+  ]
+}

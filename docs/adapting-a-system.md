@@ -153,8 +153,11 @@ The icon row on an expanded item-list entry:
 | `"edit"` | Opens the item's own sheet |
 | `"delete"` | Deletes the item, behind a confirm dialog |
 | `{ "action": "toggle", "path": "system.equipped", "label": "Equip" }` | Flips a boolean, label swaps between `label`/`offLabel` |
+| `{ "action": "cycle", "path": "system.header.active", "states": [{"value":"true","label":"Active"}, {"value":"false","label":"Inactive"}, {"value":"fLocker","label":"Foot Locker"}] }` | For fields with more than two states (alienrpg: active/inactive/Foot Locker). Tap advances to the next state, wrapping around; icon/label shown describe the state it'll move *to*. |
 | `{ "action": "invoke", "invoke": {...} }` | Runs an arbitrary invoke |
 | `{ "custom": "itemActions" }` | Whole action list built by a function in `invokeModule` — use this when the rule has real branching |
+
+A section can also show a small pill next to each item's name via `status: { source, config }` — `source` is an expression evaluated per-item, its result looked up in the CONFIG map named by `config` (same shape as `labelFrom`). Pairs naturally with `cycle`: don't filter multi-state items out of the list with `where`, show all of them and let the pill say which state they're in (see `systems/alienrpg.json`'s weapons/armor/gear sections).
 
 ## Invokes — how a tap actually does something
 

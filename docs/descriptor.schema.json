@@ -99,12 +99,25 @@
           "type": "object",
           "required": ["action"],
           "properties": {
-            "action": { "enum": ["toggle", "invoke"] },
+            "action": { "enum": ["toggle", "invoke", "cycle"] },
             "label": { "type": "string" },
             "offLabel": { "type": "string" },
             "icon": { "type": "string" },
             "path": { "type": "string" },
-            "invoke": { "$ref": "#/$defs/invoke" }
+            "invoke": { "$ref": "#/$defs/invoke" },
+            "states": {
+              "type": "array",
+              "description": "cycle only. Tap advances `path` to the next state's `value`, wrapping around.",
+              "items": {
+                "type": "object",
+                "required": ["value"],
+                "properties": {
+                  "value": {},
+                  "label": { "type": "string" },
+                  "icon": { "type": "string" }
+                }
+              }
+            }
           }
         },
         {
@@ -142,6 +155,17 @@
         "labelFrom": { "$ref": "#/$defs/labelFrom" },
         "invoke": { "$ref": "#/$defs/invoke" },
         "qty": { "$ref": "#/$defs/expr" },
+        "status": {
+          "type": "object",
+          "description": "item-list only. Resolves a per-item pill label — `source` is an expression evaluated against the item, its result looked up in the CONFIG map named by `config` (same shape as `labelFrom`).",
+          "required": ["source", "config"],
+          "properties": {
+            "source": { "$ref": "#/$defs/expr" },
+            "config": { "type": "string" },
+            "field": { "type": "string" },
+            "localize": { "type": "boolean" }
+          }
+        },
         "description": { "$ref": "#/$defs/expr" },
         "name": { "$ref": "#/$defs/expr" },
         "actions": { "type": "array", "items": { "$ref": "#/$defs/action" } },

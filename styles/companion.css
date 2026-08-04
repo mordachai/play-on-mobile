@@ -1227,6 +1227,15 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   opacity: 0.7;
 }
 
+.pom-status-pill {
+  font-size: 0.75em;
+  padding: 0.05em 0.5em;
+  border-radius: 999px;
+  background: var(--pom-color-accent-muted, rgba(127, 127, 127, 0.25));
+  opacity: 0.85;
+  white-space: nowrap;
+}
+
 /* Inventory/magic/spell rows double as accordion triggers on long-press
    (see companion-app.mjs _toggleAccordion) — the wrapper is the actual grid
    cell so it can break out to a full-width row (grid-column: 1 / -1) once
