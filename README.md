@@ -1,5 +1,7 @@
 # Play on Mobile
 
+### *Actual screen capture pics of a Vagabond game session on my mobile:*
+
 <img width="980" alt="Vagabond companion sheet on a phone, docked beside the live map" src="https://github.com/user-attachments/assets/c04476ad-ff52-4827-8f51-2f9bf43b1f8e" />
 
 *Play the table using gestures you already know:  tap, pan, pinch, long tap*
