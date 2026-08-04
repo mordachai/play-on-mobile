@@ -4,7 +4,7 @@
 
 *Play the table using gestures you already know:  tap, pan, pinch, long tap*
 
-<img width="980" alt="Vagabond companion sheet expanded, showing spells and inventory accordions" src="https://github.com/user-attachments/assets/2581bc5e-1d48-452c-9d29-8d0050ad3cd3" />
+<img width="980" alt="image" src="https://github.com/user-attachments/assets/e2280697-19b3-4b98-96f2-f9f519eeea30" />
 
 *Works in both portrait and landscape: gives you full room for expanding the sheet while keeping an eye on the map.*
 
