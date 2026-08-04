@@ -1,5 +1,6 @@
 import { MODULE_ID, registerSettings } from "./settings.mjs";
 import { CompanionController } from "./companion/companion-controller.mjs";
+import { initSheetOpenGuard } from "./gestures/sheet-open-guard.mjs";
 import { maybePromptMobileActivation } from "./companion/mobile-detect.mjs";
 import { registerServiceWorker } from "./pwa/register-sw.mjs";
 import { initReconnectOverlay } from "./pwa/reconnect-overlay.mjs";
@@ -15,6 +16,8 @@ import { registerSystem, getActiveDescriptor } from "./adapters/adapter-registry
 
 Hooks.once("init", async () => {
   registerSettings();
+  // Must run before any token draws — see sheet-open-guard.mjs header.
+  initSheetOpenGuard();
 
   // A system/module wanting first-class companion support without shipping
   // it as part of this module (or waiting on a release of this module) calls

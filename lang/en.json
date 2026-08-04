@@ -33,6 +33,12 @@
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Pan Nib Sensitivity",
   "PLAYONMOBILE.Companion.Settings.FastRolls": "Fast Rolls",
   "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Skip a system's own roll-config dialog where possible. Only affects systems whose companion sheet declares a fast-forward shortcut.",
+  "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpen": "Block Double-Tap Sheet Open",
+  "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpenHint": "Prevent a quick double-tap on a token from opening its actor sheet. Recommended on touch, where accidental double-taps are common.",
+  "PLAYONMOBILE.Companion.Settings.LeaveTable": "Leave Table",
+  "PLAYONMOBILE.Companion.Settings.LeaveTableHint": "Log out of this session and return to the join screen. Useful when the app is installed as a PWA with no browser chrome to close it from.",
+  "PLAYONMOBILE.Companion.LeaveTable.ConfirmTitle": "Leave Table",
+  "PLAYONMOBILE.Companion.LeaveTable.ConfirmContent": "Log out and return to the join screen?",
   "PLAYONMOBILE.Companion.UnsupportedSystem": "This system isn't specially supported yet. Showing raw data only.",
   "PLAYONMOBILE.MobileDetect.Title": "Play on Mobile",
   "PLAYONMOBILE.MobileDetect.Content": "Looks like you're on a mobile device. Activate mobile mode?"

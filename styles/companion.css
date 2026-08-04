@@ -1076,12 +1076,21 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   font-weight: normal;
 }
 
-/* Saves row: 1 col by default (matches every other grid at half-open), 3
-   at fully-open. Grid (not the auto-fit/minmax trick used by .pom-grid-*
-   below) since saves are few and fixed in count (3 on most systems) — an
-   explicit column count reads cleaner than minmax's continuous reflow for
-   a row this short. Same 250px breakpoint as .pom-resource-substat-grid,
-   see the comment there. */
+/* check-grid baseline: every check-grid section gets this automatically
+   (see companion-sheet.hbs — .pom-check-grid is applied unconditionally,
+   unlike item-list's cssClass-only grids), same as stat-row's
+   .pom-stats-row and resources' .pom-resource-substat-grid are automatic.
+   A system descriptor's own `cssClass` (e.g. vagabond's .pom-checks-row,
+   .pom-grid-skills) still layers on top for a different column basis —
+   this is just the floor so a system that supplies no cssClass at all
+   (abilities/saves/exploration-style short label+number chips) never
+   degrades to an unstyled single-column button stack. 1 col by default
+   (matches every other grid at half-open), 3 at fully-open — grid (not
+   the auto-fit/minmax trick used by .pom-grid-* below) since these rows
+   are typically few and fixed in count: an explicit column count reads
+   cleaner than minmax's continuous reflow for a row this short. Same
+   250px breakpoint as .pom-resource-substat-grid, see the comment there. */
+.pom-check-grid,
 .pom-checks-row {
   display: grid;
   grid-template-columns: 1fr;
@@ -1089,6 +1098,7 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
 }
 
 @container (min-width: 250px) {
+  .pom-check-grid,
   .pom-checks-row {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1684,6 +1694,16 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   border: var(--b-1);
   border-radius: var(--pom-radius-btn);
   color: var(--pom-color-1-text);
+}
+
+.pom-danger-button {
+  width: 100%;
+  min-height: 40px;
+  margin-top: 0.3rem;
+  background: #7a1f1f;
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: #fff;
 }
 
 @media (orientation: portrait) {

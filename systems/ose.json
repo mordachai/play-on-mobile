@@ -1,0 +1,127 @@
+{
+  "formatVersion": 1,
+  "system": "ose",
+  "label": "Old School Essentials",
+  "invokeModule": "/modules/play-on-mobile/scripts/adapters/invokes/ose.mjs",
+  "snapshot": { "custom": "readSnapshot" },
+
+  "header": {
+    "subtitle": [
+      { "label": "Level", "value": "@system.details.level" },
+      "@system.details.class",
+      "@system.details.alignment"
+    ]
+  },
+
+  "sections": [
+    {
+      "id": "abilities",
+      "render": "check-grid",
+      "label": "Abilities",
+      "hideIfEmpty": false,
+      "source": "@snap.scores",
+      "value": "@.value",
+      "labelFrom": { "config": "OSE.scores_short", "localize": true },
+      "invoke": { "kind": "actorMethod", "path": "rollCheck", "args": ["{key}"] }
+    },
+
+    {
+      "id": "vitals",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "hp", "label": "HP", "value": "@system.hp.value", "max": "@system.hp.max", "write": "system.hp.value", "min": 0, "editable": true },
+        { "key": "ac", "label": "AC", "value": "@system.ac.value" },
+        { "key": "aac", "label": "AAC", "value": "@system.aac.value" },
+        { "key": "thac0", "label": "THAC0", "value": "@system.thac0.value" },
+        { "key": "melee", "label": "Melee Mod", "value": "@system.meleeMod" },
+        { "key": "missile", "label": "Missile Mod", "value": "@system.rangedMod" },
+        { "key": "movement", "label": "Movement", "value": "@system.movement.base" },
+        { "key": "xp", "label": "XP", "value": "@system.details.xp.value", "max": "@system.details.xp.next", "write": "system.details.xp.value", "min": 0, "editable": true }
+      ]
+    },
+
+    {
+      "id": "saves",
+      "render": "check-grid",
+      "label": "Saving Throws",
+      "hideIfEmpty": false,
+      "source": "@system.saves",
+      "value": "@.value",
+      "labelFrom": { "config": "OSE.saves_long", "localize": true },
+      "invoke": { "kind": "actorMethod", "path": "rollSave", "args": ["{key}"] }
+    },
+
+    {
+      "id": "exploration",
+      "render": "check-grid",
+      "label": "Exploration",
+      "hideIfEmpty": false,
+      "source": "@system.exploration",
+      "labelFrom": { "config": "OSE.exploration_skills", "localize": true },
+      "invoke": { "kind": "actorMethod", "path": "rollExploration", "args": ["{key}"] }
+    },
+
+    {
+      "id": "weapons",
+      "render": "item-list",
+      "label": "Weapons",
+      "collapsible": true,
+      "cssClass": "pom-grid-equipped",
+      "where": { "type": "weapon" },
+      "qty": "@item.system.quantity.value",
+      "description": "@item.system.description",
+      "invoke": { "kind": "itemMethod", "path": "roll" },
+      "actions": ["use", "toChat", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, "edit", "delete"]
+    },
+
+    {
+      "id": "armor",
+      "render": "item-list",
+      "label": "Armor",
+      "collapsible": true,
+      "cssClass": "pom-grid-equipped",
+      "where": { "type": "armor" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "itemMethod", "path": "roll" },
+      "actions": ["toChat", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, "edit", "delete"]
+    },
+
+    {
+      "id": "spells",
+      "render": "item-list",
+      "label": "Spells",
+      "collapsible": true,
+      "cssClass": "pom-grid-spells",
+      "where": { "type": "spell" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "itemMethod", "path": "roll" },
+      "actions": ["use", "toChat", "edit", "delete"]
+    },
+
+    {
+      "id": "features",
+      "render": "item-list",
+      "label": "Class Abilities",
+      "collapsible": true,
+      "cssClass": "pom-grid-magic",
+      "where": { "type": "ability" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "itemMethod", "path": "roll" },
+      "actions": ["use", "toChat", "edit", "delete"]
+    },
+
+    {
+      "id": "inventory",
+      "render": "item-list",
+      "label": "Inventory",
+      "collapsible": true,
+      "cssClass": "pom-grid-inventory",
+      "where": { "type": ["item", "container"] },
+      "qty": "@item.system.quantity.value",
+      "description": "@item.system.description",
+      "invoke": { "kind": "itemMethod", "path": "show" },
+      "actions": ["toChat", "edit", "delete"]
+    }
+  ]
+}

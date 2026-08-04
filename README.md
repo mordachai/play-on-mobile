@@ -12,20 +12,19 @@
 
 A Foundry VTT module that turns a player's phone into a companion device for the table: a simplified, tap-friendly character sheet docked alongside a live, pannable view of the map.
 
-### Touch gesture equivalents
+### Touch gestures
 
-Every touch gesture maps to something the desktop UI already does — nothing new to learn, just a different input.
-
-| Gesture | Does this | Desktop equivalent |
-|---|---|---|
-| Tap a token | Select it | Left-click |
-| Tap empty space (with a token selected) | Walk the token there, capped by its speed | Drag-to-move |
-| Double-tap a token | Toggle target | Click the token's target icon |
-| Tap a skill/save/spell/item on the sheet | Roll or use it | Left-click the same control on the real sheet |
-| Long-press an item on the sheet | Open its action row (edit/delete/equip/...) | Right-click / the item's context menu |
-| Two-finger drag on the map | Pan | Right-click-drag |
-| Two-finger pinch on the map | Zoom | Mouse wheel |
-| Drag the floating pan nib | Pan one-thumbed, holds direction while held | Right-click-drag (companion-only alternative when you don't have a free hand) |
+| Gesture | Does this |
+|---|---|
+| Tap a token | Select it |
+| Tap empty space (with a token selected) | Walk the token there |
+| Double-tap a token | Toggle target |
+| Tap a skill/save/spell/item on the sheet | Roll or use it |
+| Long-press an item on the sheet | Same as right-click on desktop |
+| Two-finger drag on the map | Pan |
+| Two-finger pinch on the map | Zoom |
+| Drag the floating pan nib | Pan one-thumbed, holds direction while held |
+| Double tap on pan nib | Pan to own token |
 
 ## What it actually does
 

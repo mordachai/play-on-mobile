@@ -86,7 +86,7 @@
 
       {{#if this.isCheckGrid}}
       <h3 class="pom-section-label">{{this.label}}</h3>
-      <div class="{{this.cssClass}}">
+      <div class="pom-check-grid {{this.cssClass}}">
         {{#each this.entries}}
         <button type="button" class="pom-check" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}">
           <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
@@ -307,12 +307,24 @@
         </div>
         <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.FastRollsHint"}}</span>
 
+        <div class="pom-setting-row">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpen"}}</span>
+          <button type="button" class="pom-toggle {{#if blockDoubleTapSheetOpen}}on{{/if}}" data-action="toggleBlockDoubleTapSheetOpen" aria-pressed="{{blockDoubleTapSheetOpen}}"></button>
+        </div>
+        <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpenHint"}}</span>
+
         <div class="pom-setting-row pom-setting-row-block">
           <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.NibSensitivity"}}</span>
           <div class="pom-slider-row">
             <input type="range" name="nib-sensitivity" min="0.3" max="1.2" step="0.05" value="{{nibSensitivity}}">
             <span class="pom-nib-sensitivity-value">{{nibSensitivity}}</span>
           </div>
+        </div>
+
+        <div class="pom-setting-row pom-setting-row-block">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.LeaveTable"}}</span>
+          <button type="button" class="pom-danger-button" data-action="leaveTable">{{localize "PLAYONMOBILE.Companion.Settings.LeaveTable"}}</button>
+          <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.LeaveTableHint"}}</span>
         </div>
       </div>
       {{/if}}

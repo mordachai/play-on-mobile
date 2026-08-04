@@ -49,8 +49,10 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       setHandedness: PhoneCompanionApp._onSetHandedness,
       toggleNib: PhoneCompanionApp._onToggleNib,
       toggleFastRolls: PhoneCompanionApp._onToggleFastRolls,
+      toggleBlockDoubleTapSheetOpen: PhoneCompanionApp._onToggleBlockDoubleTapSheetOpen,
       toggleForeignSetting: PhoneCompanionApp._onToggleForeignSetting,
       openSettingsMenu: PhoneCompanionApp._onOpenSettingsMenu,
+      leaveTable: PhoneCompanionApp._onLeaveTable,
     },
   };
 
@@ -199,6 +201,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       })),
       nibEnabled: game.settings.get(MODULE_ID, "panNibEnabled"),
       nibSensitivity: game.settings.get(MODULE_ID, "panNibSensitivity"),
+      blockDoubleTapSheetOpen: game.settings.get(MODULE_ID, "blockDoubleTapSheetOpen"),
       // Only meaningful for a system whose descriptor declares
       // `fastForward` (see _onEntryPress) — shown regardless, since a
       // toggle that quietly does nothing for the current system is more
@@ -764,10 +767,26 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     this.render();
   }
 
+  static _onToggleBlockDoubleTapSheetOpen(_event, _target) {
+    const next = !game.settings.get(MODULE_ID, "blockDoubleTapSheetOpen");
+    game.settings.set(MODULE_ID, "blockDoubleTapSheetOpen", next);
+    this.render();
+  }
+
   static _onToggleForeignSetting(_event, target) {
     const { namespace, key } = target.dataset;
     game.settings.set(namespace, key, !game.settings.get(namespace, key));
     this.render();
+  }
+
+  static async _onLeaveTable(_event, _target) {
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+      window: { title: game.i18n.localize("PLAYONMOBILE.Companion.LeaveTable.ConfirmTitle") },
+      content: `<p>${game.i18n.localize("PLAYONMOBILE.Companion.LeaveTable.ConfirmContent")}</p>`,
+      rejectClose: false,
+      modal: true,
+    });
+    if (confirmed) game.logOut();
   }
 
   /** Same instantiate-and-render core does for any settings submenu button

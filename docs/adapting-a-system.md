@@ -102,7 +102,7 @@ Add `"when": "@snap.mana"` on an entry to make it vanish entirely for actors tha
 { "id": "abilities", "render": "stat-row", "source": "@system.abilities", "value": "@.value", "abbr": { "config": "DND5E.abilities", "field": "abbreviation" } }
 ```
 
-**`check-grid`** — label/value entries that roll on tap (skills, saves).
+**`check-grid`** — label/value entries that roll on tap (skills, saves). Gets a responsive 1-to-3-column grid automatically (`.pom-check-grid`, same baseline stat-row/resources get) — no `cssClass` needed for a sane default; set one only to opt into a system-specific tile size (vagabond's `.pom-grid-skills` / `.pom-checks-row`).
 
 ```json
 {

@@ -100,6 +100,18 @@ export function registerSettings() {
     default: true,
   });
 
+  // Touch has no hover, so an accidental double-tap on a token (e.g. two
+  // quick taps meant as separate select/move actions) reads to core as a
+  // double-click and opens the actor sheet on top of the companion panel.
+  // Default on — see gestures/sheet-open-guard.mjs. Controlled only from the
+  // companion panel's own Settings tab — config: false.
+  game.settings.register(MODULE_ID, "blockDoubleTapSheetOpen", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: true,
+  });
+
   // GM-authored preset of client-scope settings (this module's own plus any
   // other module's/system's) forced onto a player's client the moment
   // companion mode activates there — see gm/settings-preset.mjs. Keyed by

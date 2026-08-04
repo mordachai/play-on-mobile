@@ -7,10 +7,17 @@
  * released snaps back to center and panning stops. Fixed at the vertical
  * center of the left edge — clear of the bottom-dock panel (portrait) and
  * the right-dock panel (landscape) either way.
+ *
+ * Double-tapping the nib (without dragging) recenters the canvas on the
+ * user's own token, same speed-dial gesture as tap-actions.mjs uses for
+ * targeting, since a virtual joystick has no room for a separate button.
  */
 
 const BASE_RADIUS = 34; // px
 const MAX_PAN_SPEED = 1400; // world units/sec at full deflection, before /scale
+const TAP_MAX_MS = 300; // touch duration under which a touch counts as a tap, not a drag
+const TAP_MAX_MOVE_PX = 10;
+const DOUBLE_TAP_MS = 350; // max gap between two taps to count as a double-tap
 
 // Multiplies MAX_PAN_SPEED — adjustable live from the companion Settings tab
 // (see companion-app.mjs _onToggleNib / the nib-sensitivity range input)
@@ -91,6 +98,8 @@ export function initPanNib() {
   let dy = 0;
   let rafId = null;
   let lastTime = 0;
+  let touchStartTime = 0;
+  let lastTapTime = 0;
 
   function onStart(event) {
     active = true;
@@ -100,6 +109,7 @@ export function initPanNib() {
     dx = 0;
     dy = 0;
     lastTime = performance.now();
+    touchStartTime = lastTime;
     if (!rafId) rafId = requestAnimationFrame(loop);
     event.preventDefault();
   }
@@ -123,11 +133,24 @@ export function initPanNib() {
 
   function onEnd(event) {
     active = false;
+    const changed = event.changedTouches[0];
+    const elapsed = performance.now() - touchStartTime;
+    const moved = changed ? Math.hypot(changed.clientX - originX, changed.clientY - originY) : Infinity;
     dx = 0;
     dy = 0;
     knob.style.transition = "transform 0.1s ease-out";
     knob.style.transform = "translate(0, 0)";
     event.preventDefault();
+
+    if (elapsed <= TAP_MAX_MS && moved <= TAP_MAX_MOVE_PX) {
+      const now = performance.now();
+      if (now - lastTapTime <= DOUBLE_TAP_MS) {
+        lastTapTime = 0;
+        panToOwnerToken();
+      } else {
+        lastTapTime = now;
+      }
+    }
   }
 
   function loop(now) {
@@ -143,6 +166,29 @@ export function initPanNib() {
     }
     if (active) rafId = requestAnimationFrame(loop);
     else rafId = null;
+  }
+
+  function panToOwnerToken() {
+    if (!canvas?.ready) return;
+    const token = getOwnerToken();
+    if (!token) return;
+    if (!token.controlled) token.control({ releaseOthers: true });
+    const doc = token.document;
+    const size = canvas.grid.size;
+    canvas.animatePan({
+      x: doc.x + (doc.width * size) / 2,
+      y: doc.y + (doc.height * size) / 2,
+      duration: 400,
+    });
+  }
+
+  function getOwnerToken() {
+    const controlled = canvas.tokens.controlled[0];
+    if (controlled?.isOwner) return controlled;
+    const character = game.user.character;
+    const characterToken = character?.getActiveTokens(true)[0];
+    if (characterToken) return characterToken;
+    return canvas.tokens.placeables.find((t) => t.isOwner) ?? null;
   }
 
   base.addEventListener("touchstart", onStart, { passive: false });

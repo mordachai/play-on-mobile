@@ -33,6 +33,12 @@
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Sensibilidade da Alça de Pan",
   "PLAYONMOBILE.Companion.Settings.FastRolls": "Rolagens Rápidas",
   "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Pula a caixa de diálogo de configuração de rolagem do sistema, quando possível. Só afeta sistemas cuja ficha do companion declara um atalho de rolagem rápida.",
+  "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpen": "Bloquear Abertura por Duplo Toque",
+  "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpenHint": "Evita que um duplo toque rápido em um token abra a ficha do personagem. Recomendado em telas de toque, onde duplos toques acidentais são comuns.",
+  "PLAYONMOBILE.Companion.Settings.LeaveTable": "Sair da Mesa",
+  "PLAYONMOBILE.Companion.Settings.LeaveTableHint": "Encerra a sessão e volta para a tela de entrada. Útil quando o app está instalado como PWA e não há barra do navegador para fechá-lo.",
+  "PLAYONMOBILE.Companion.LeaveTable.ConfirmTitle": "Sair da Mesa",
+  "PLAYONMOBILE.Companion.LeaveTable.ConfirmContent": "Encerrar sessão e voltar para a tela de entrada?",
   "PLAYONMOBILE.Companion.UnsupportedSystem": "Este sistema ainda não tem suporte específico. Mostrando apenas dados brutos.",
   "PLAYONMOBILE.MobileDetect.Title": "Play on Mobile",
   "PLAYONMOBILE.MobileDetect.Content": "Parece que você está em um dispositivo móvel. Ativar o modo mobile?"
