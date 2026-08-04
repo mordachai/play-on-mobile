@@ -34,8 +34,7 @@ This module doesn't try to put the whole Foundry desktop UI on a phone screen �
 - **Tap-to-move, double-tap-to-target** — the map stays live underneath the sheet; touch gestures drive token movement and targeting directly on the canvas.
 - **Live, pannable map** — one-finger pan, pinch to zoom, no separate "player view" to keep in sync.
 - **Installable as a PWA** — add it to the home screen, it survives reconnects, and a wake lock keeps the screen from sleeping mid-session.
-- **GM device control** — a GM can force companion mode on or off for a specific connected player's device remotely, even if that player's screen is stuck.
-- **Settings presets** — a GM can push a set of client-scope settings (this module's or any other module's) onto a player's device the moment companion mode activates there.
+- **GM-side troubleshooting** — GM-only, scoped to your own world: toggle companion mode for one of your connected players' devices if their screen gets stuck, and optionally apply a standard set of your table's own display settings the moment it activates. 
 
 Built-in, first-class support ships for the [Vagabond](https://foundryvtt.com/packages/vagabond) system. Any other system gets a generic read-only fallback (flattened `actor.system` fields, plus raw-formula rolling) until someone adds a descriptor for it — see [Adapting a system](docs/adapting-a-system.md) below.
 
