@@ -116,7 +116,7 @@
               <div class="pom-item-actions">
                 {{#each this.actions}}
                 <button type="button" class="pom-item-action" data-action="entryAction" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
-                  <i class="{{this.icon}}"></i>
+                  <i class="{{this.icon}}"></i><span class="pom-item-action-label">{{this.label}}</span>
                 </button>
                 {{/each}}
               </div>
@@ -145,7 +145,7 @@
               <div class="pom-item-actions">
                 {{#each this.actions}}
                 <button type="button" class="pom-item-action" data-action="entryAction" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-action-index="{{@index}}" aria-label="{{this.label}}" title="{{this.label}}">
-                  <i class="{{this.icon}}"></i>
+                  <i class="{{this.icon}}"></i><span class="pom-item-action-label">{{this.label}}</span>
                 </button>
                 {{/each}}
               </div>

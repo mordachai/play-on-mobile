@@ -37,7 +37,9 @@ function findScrollable(el) {
     const scrollableY = /auto|scroll/.test(style.overflowY) && node.scrollHeight > node.clientHeight + 1;
     const scrollableX = /auto|scroll/.test(style.overflowX) && node.scrollWidth > node.clientWidth + 1;
     if (scrollableY || scrollableX) return node;
-    if (node.classList?.contains("application")) break; // don't escape the dialog
+    // Not `.application` — dialog-fit.mjs deliberately never tags V1 sheets
+    // (Shadowdark, OSE, ...) with that class (see its wireV1Window comment).
+    if (node.classList?.contains("pom-dialog-fit") || node.classList?.contains("pom-dialog-native")) break;
     node = node.parentElement;
   }
   return null;
@@ -46,7 +48,7 @@ function findScrollable(el) {
 function onTouchStart(event) {
   tracking = null;
   if (!document.body.classList.contains("pom-companion-mode") || event.touches.length !== 1) return;
-  const dialog = event.target.closest(".application:not(.pom-companion-app)");
+  const dialog = event.target.closest(".pom-dialog-fit, .pom-dialog-native");
   if (!dialog) return;
   const scrollEl = findScrollable(event.target);
   if (!scrollEl) return;

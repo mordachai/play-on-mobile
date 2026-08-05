@@ -44,6 +44,7 @@ Any system gets a generic read-only fallback (flattened `actor.system` fields, p
  - [**Vagabond**](https://foundryvtt.com/packages/vagabond)
  - [**Old School Essentials**](https://foundryvtt.com/packages/ose)
  - [**Alien RPG (Evolved)**](https://foundryvtt.com/packages/alienrpg)
+ - [**Shadowdark**](https://foundryvtt.com/packages/shadowdark)
 
 Don't see your system? It still works via the generic fallback, and adding a real descriptor is usually a JSON file — no code required. See [Adapting a system](docs/adapting-a-system.md).
 

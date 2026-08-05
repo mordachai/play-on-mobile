@@ -72,7 +72,7 @@
       "qty": "@item.system.quantity.value",
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "roll" },
-      "actions": ["use", "toChat", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, "edit", "delete"]
+      "actions": ["use", { "action": "toChat", "icon": "fas fa-eye" }, { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip", "icon": "fas fa-hand" }, "edit", "delete"]
     },
 
     {
@@ -84,7 +84,7 @@
       "where": { "type": "armor" },
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "roll" },
-      "actions": ["toChat", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, "edit", "delete"]
+      "actions": [{ "action": "toChat", "icon": "fas fa-eye" }, { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip", "icon": "fas fa-tshirt" }, "edit", "delete"]
     },
 
     {
@@ -96,7 +96,7 @@
       "where": { "type": "spell" },
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "roll" },
-      "actions": ["use", "toChat", "edit", "delete"]
+      "actions": ["use", { "action": "toChat", "icon": "fas fa-eye" }, "edit", "delete"]
     },
 
     {
@@ -108,7 +108,7 @@
       "where": { "type": "ability" },
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "roll" },
-      "actions": ["use", "toChat", "edit", "delete"]
+      "actions": ["use", { "action": "toChat", "icon": "fas fa-eye" }, "edit", "delete"]
     },
 
     {
@@ -121,7 +121,7 @@
       "qty": "@item.system.quantity.value",
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "show" },
-      "actions": ["toChat", "edit", "delete"]
+      "actions": [{ "action": "toChat", "icon": "fas fa-eye" }, "edit", "delete"]
     }
   ]
 }

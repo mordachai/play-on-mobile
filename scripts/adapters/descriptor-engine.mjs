@@ -116,16 +116,22 @@ function buildKeyValueEntry(section, key, entry, ctx) {
 function buildItemActions(section, item, itemCtx, ctx) {
   const defs = section.actions ?? [];
   return defs.flatMap((def) => {
-    if (def === "use") {
+    // "use"/"toChat"/"edit"/"delete" take either bare-string or object form;
+    // the object form's only extra field is `icon`, letting a descriptor
+    // override the builtin default to match its own system's real glyph
+    // for that action (e.g. OSE's "Show" button is fa-eye, not fa-comment).
+    const action = typeof def === "string" ? def : def?.action;
+    const iconOverride = typeof def === "object" ? def.icon : undefined;
+    if (action === "use") {
       if (!section.invoke) return [];
       return [
-        { icon: "fas fa-hand-sparkles", label: "Use", onSelect: () => runInvoke(section.invoke, itemCtx) },
+        { icon: iconOverride ?? "fas fa-hand-sparkles", label: "Use", onSelect: () => runInvoke(section.invoke, itemCtx) },
       ];
     }
-    if (def === "toChat") {
+    if (action === "toChat") {
       return [
         {
-          icon: "fas fa-comment",
+          icon: iconOverride ?? "fas fa-comment",
           label: "Send to Chat",
           onSelect: () =>
             ChatMessage.create({
@@ -135,13 +141,13 @@ function buildItemActions(section, item, itemCtx, ctx) {
         },
       ];
     }
-    if (def === "edit") {
-      return [{ icon: "fas fa-edit", label: "Edit", onSelect: () => item.sheet.render(true) }];
+    if (action === "edit") {
+      return [{ icon: iconOverride ?? "fas fa-edit", label: "Edit", onSelect: () => item.sheet.render(true) }];
     }
-    if (def === "delete") {
+    if (action === "delete") {
       return [
         {
-          icon: "fas fa-trash",
+          icon: iconOverride ?? "fas fa-trash",
           label: "Delete",
           onSelect: async () => {
             const confirmed = await foundry.applications.api.DialogV2.confirm({

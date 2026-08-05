@@ -1,0 +1,162 @@
+{
+  "formatVersion": 1,
+  "system": "shadowdark",
+  "label": "Shadowdark RPG",
+  "invokeModule": "/modules/play-on-mobile/scripts/adapters/invokes/shadowdark.mjs",
+  "snapshot": { "custom": "readSnapshot" },
+
+  "dialogs": {
+    "selfPositioned": ["#sd-roll-dialog"]
+  },
+
+  "header": {
+    "subtitle": [
+      { "label": "Level", "value": "@system.level.value" },
+      "@snap.ancestryName",
+      "@snap.className"
+    ]
+  },
+
+  "sections": [
+    {
+      "id": "abilities",
+      "render": "check-grid",
+      "label": "Abilities",
+      "hideIfEmpty": false,
+      "source": "@system.abilities",
+      "value": "@.value",
+      "labelFrom": { "config": "SHADOWDARK.ABILITIES_LONG", "localize": true },
+      "invoke": { "kind": "propMethod", "path": "system", "call": "rollStatCheck", "args": ["{key}"] }
+    },
+
+    {
+      "id": "vitals",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "hp", "label": "HP", "value": "@system.attributes.hp.value", "max": "@system.attributes.hp.max", "write": "system.attributes.hp.value", "min": 0, "editable": true },
+        { "key": "ac", "label": "AC", "value": "@system.attributes.ac.value" },
+        { "key": "xp", "label": "XP", "value": "@system.level.xp", "max": "@snap.xpNext", "write": "system.level.xp", "min": 0, "editable": true },
+        { "key": "renown", "label": "Renown", "value": "@system.renown", "write": "system.renown", "min": 0, "editable": true },
+        { "key": "luckToken", "label": "Luck", "value": "@snap.luckAvailable", "max": "1", "write": "system.luck.available", "min": 0, "editable": true, "when": "@snap.notPulpMode" },
+        { "key": "luckPulp", "label": "Luck", "value": "@system.luck.remaining", "write": "system.luck.remaining", "min": 0, "editable": true, "when": "@snap.pulpMode" },
+        { "key": "gp", "label": "GP", "value": "@system.coins.gp", "write": "system.coins.gp", "min": 0, "editable": true },
+        { "key": "sp", "label": "SP", "value": "@system.coins.sp", "write": "system.coins.sp", "min": 0, "editable": true },
+        { "key": "cp", "label": "CP", "value": "@system.coins.cp", "write": "system.coins.cp", "min": 0, "editable": true }
+      ]
+    },
+
+    {
+      "id": "weapons",
+      "render": "item-list",
+      "label": "Weapons",
+      "collapsible": false,
+      "cssClass": "pom-grid-equipped",
+      "where": { "type": "Weapon" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "rollAttack" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "armor",
+      "render": "item-list",
+      "label": "Armor",
+      "collapsible": false,
+      "cssClass": "pom-grid-equipped",
+      "where": { "type": "Armor" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "itemPress" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "spells",
+      "render": "item-list",
+      "label": "Spells",
+      "collapsible": false,
+      "cssClass": "pom-grid-spells",
+      "where": { "type": "Spell" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "castSpell" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "classAbilities",
+      "render": "item-list",
+      "label": "Class Abilities",
+      "collapsible": true,
+      "cssClass": "pom-grid-magic",
+      "where": { "type": "Class Ability" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "useAbility" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "potions",
+      "render": "item-list",
+      "label": "Potions",
+      "collapsible": true,
+      "cssClass": "pom-grid-inventory",
+      "where": { "type": "Potion" },
+      "qty": "@item.system.quantity",
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "usePotion" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "scrollsWands",
+      "render": "item-list",
+      "label": "Scrolls & Wands",
+      "collapsible": true,
+      "cssClass": "pom-grid-inventory",
+      "where": { "type": ["Scroll", "Wand"] },
+      "qty": "@item.system.quantity",
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "itemPress" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "gear",
+      "render": "item-list",
+      "label": "Gear",
+      "collapsible": true,
+      "cssClass": "pom-grid-inventory",
+      "where": { "type": ["Basic", "Gem"] },
+      "qty": "@item.system.quantity",
+      "description": "@item.system.description",
+      "invoke": { "kind": "custom", "fn": "itemPress" },
+      "actions": [{ "custom": "itemActions" }]
+    },
+
+    {
+      "id": "talents",
+      "render": "entry-list",
+      "label": "Talents",
+      "source": "@itemsOfType.Talent",
+      "name": "@.name",
+      "description": "@.system.description"
+    },
+
+    {
+      "id": "boons",
+      "render": "entry-list",
+      "label": "Boons",
+      "source": "@itemsOfType.Boon",
+      "name": "@.name",
+      "description": "@.system.description"
+    },
+
+    {
+      "id": "languages",
+      "render": "entry-list",
+      "label": "Languages",
+      "source": "@snap.languages",
+      "name": "@.name"
+    }
+  ]
+}

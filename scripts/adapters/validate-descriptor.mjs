@@ -41,6 +41,12 @@ function validateAction(def, path, errors) {
     return;
   }
   if (def.custom) return; // opaque — lives in invokeModule
+  if (BUILTIN_ACTIONS.has(def.action)) {
+    if (def.icon !== undefined && typeof def.icon !== "string") {
+      errors.push(`${path}: "icon" must be a string`);
+    }
+    return;
+  }
   if (def.action === "toggle") {
     if (!def.path) errors.push(`${path}: action "toggle" requires "path"`);
   } else if (def.action === "invoke") {

@@ -517,8 +517,33 @@ body.pom-companion-mode .pom-companion-app .window-content {
    Self-positioning dialogs (vagabond: SpellCastDialog) position:fixed and
    size themselves via their own JS, and `inset`/`width` here would fight
    that — pinning them full-screen also leaves no room to drag them, which is
-   how the user reaches controls that end up past the screen edge. */
+   how the user reaches controls that end up past the screen edge.
+
+   `:not(.pom-dialog-fit-unpinned)` — dialog-fit.mjs's wireUnpinOnFirstDrag()
+   adds that class the moment the user first touches the header to drag a
+   fit-scaled sheet (confirmed live: Shadowdark's actor/item sheets, both
+   still V1 Applications). Without this exclusion `!important` here would
+   permanently out-rank the inline left/top core's own Draggable sets during
+   the drag, and the window would visually never move at all despite the
+   touch-action fix below actually letting the gesture through. */
+/* Some systems set a desktop-oriented `min-width`/`min-height` on their sheet
+   (confirmed live: Shadowdark's item sheet, `min-width: 550px`) wider than a
+   phone viewport. `min-width` is a hard floor CSS applies on top of whatever
+   `width` says, inline or not — pom-dialog-fit's own width rules (90% pinned,
+   or dialog-fit.mjs's JS-computed shrink on unpin) never touch `min-width`,
+   so the system's floor always wins and the sheet renders wider than the
+   screen. That silently breaks horizontal dragging: core's own setPosition
+   clamps `left` into `[0, innerWidth - width]`, and once `width` exceeds
+   `innerWidth` that range collapses to a single point, permanently pinning
+   `left` at 0 (confirmed live via phone position sampling: `top` tracked the
+   drag, `left` never left 0px). Applies in both pinned and unpinned state,
+   not just the sizing rule below. */
 body.pom-companion-mode .pom-dialog-fit {
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+body.pom-companion-mode .pom-dialog-fit:not(.pom-dialog-fit-unpinned) {
   position: fixed !important;
   inset: 5% !important;
   width: 90% !important;
@@ -541,7 +566,13 @@ body.pom-companion-mode .pom-dialog-fit .window-content {
 
 body.pom-companion-mode .application:not(.pom-companion-app) button,
 body.pom-companion-mode .application:not(.pom-companion-app) input,
-body.pom-companion-mode .application:not(.pom-companion-app) select {
+body.pom-companion-mode .application:not(.pom-companion-app) select,
+body.pom-companion-mode .pom-dialog-fit button,
+body.pom-companion-mode .pom-dialog-fit input,
+body.pom-companion-mode .pom-dialog-fit select,
+body.pom-companion-mode .pom-dialog-native button,
+body.pom-companion-mode .pom-dialog-native input,
+body.pom-companion-mode .pom-dialog-native select {
   min-height: 44px;
   font-size: 1rem;
 }
@@ -555,8 +586,19 @@ body.pom-companion-mode .application:not(.pom-companion-app) select {
    covers every *framed* dialog any system opens on the phone for free — no
    per-system JS needed. Frameless custom dialogs (window:{frame:false}, no
    .window-header) are NOT covered — those hand-roll their own drag and need
-   their own Pointer Events + touch-action, same as we did for vagabond. */
-body.pom-companion-mode .application .window-header {
+   their own Pointer Events + touch-action, same as we did for vagabond.
+
+   `.pom-dialog-fit`/`.pom-dialog-native` (not just `.application`) are also
+   listed directly: V1 Application actor/item sheets (Shadowdark, OSE, and
+   any other system still on the old sheet framework — confirmed live,
+   dialog-fit.mjs's wireV1Window()) use core's same Pointer-Events Draggable
+   but their outer frame is `.app.window-app`, never `.application` — without
+   this they still had a `.window-header` and were still draggable in
+   principle, but with no touch-action fix the browser kept stealing the
+   gesture as a page pan, so dragging silently did nothing. */
+body.pom-companion-mode .application .window-header,
+body.pom-companion-mode .pom-dialog-fit .window-header,
+body.pom-companion-mode .pom-dialog-native .window-header {
   touch-action: none;
 }
 
@@ -1257,10 +1299,9 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   grid-column: 1 / -1;
 }
 
-/* Icon-only row atop an expanded item's info — mirrors vagabond's own
+/* Icon+label row atop an expanded item's info — mirrors vagabond's own
    right-click context menu (Use/Send to Chat/Equip-Unequip/Bind/Edit/Delete),
-   see itemActions() in scripts/adapters/invokes/vagabond.mjs. No labels, icons only, per
-   the reference layout — title/aria-label carry the text for a11y. */
+   see itemActions() in scripts/adapters/invokes/vagabond.mjs. */
 .pom-item-actions {
   display: flex;
   flex-wrap: wrap;
@@ -1270,15 +1311,23 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
 
 .pom-item-action {
   flex: 0 0 auto;
-  width: 36px;
+  min-width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 0.3rem;
+  padding: 0 0.5rem;
   background: var(--pom-color-1);
   border: var(--b-1);
   border-radius: var(--pom-radius-btn);
   color: var(--pom-color-1-text);
+}
+
+.pom-item-action-label {
+  font-size: 0.65rem;
+  line-height: 1;
+  white-space: nowrap;
 }
 
 /* Accordions (traits/features/perks) */

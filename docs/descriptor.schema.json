@@ -99,6 +99,14 @@
           "type": "object",
           "required": ["action"],
           "properties": {
+            "action": { "enum": ["use", "toChat", "edit", "delete"] },
+            "icon": { "type": "string", "description": "Overrides the builtin default icon — set this to match the target system's own glyph for the action." }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["action"],
+          "properties": {
             "action": { "enum": ["toggle", "invoke", "cycle"] },
             "label": { "type": "string" },
             "offLabel": { "type": "string" },

@@ -3,6 +3,7 @@ import { PhoneCompanionApp } from "./companion-app.mjs";
 import { initCanvasGestures } from "../gestures/canvas-gestures.mjs";
 import { initPanNib, setPanNibSensitivity, setPanNibSide } from "../gestures/pan-nib.mjs";
 import { initDialogScrollGesture } from "../gestures/dialog-scroll.mjs";
+import { initDialogZoomGesture } from "../gestures/dialog-zoom.mjs";
 import { initDialogFit } from "../gestures/dialog-fit.mjs";
 import { applyCompanionSettingsPreset } from "../gm/settings-preset.mjs";
 
@@ -23,6 +24,7 @@ export const CompanionController = {
     // phone's own screen-mirroring, not a separate hidden-away thing.
     initCanvasGestures();
     initDialogScrollGesture();
+    initDialogZoomGesture();
     initDialogFit();
     setPanNibSensitivity(game.settings.get(MODULE_ID, "panNibSensitivity"));
     setPanNibSide(game.settings.get(MODULE_ID, "companionHandedness"));
