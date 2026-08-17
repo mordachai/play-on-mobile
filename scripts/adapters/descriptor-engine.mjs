@@ -25,6 +25,21 @@ async function defaultEnrichHTML(html, actor) {
   }
 }
 
+/** `section.qtyLabel` may be a single expression or an ordered list of
+ * fallback candidates (a per-item override, then a static default) — first
+ * non-empty wins. Mirrors the fallback a system's own sheet already does in
+ * Handlebars (e.g. XDZ's weapon-card falling back from a per-weapon
+ * `ammoLabel` to a localized default when the item leaves it blank), so a
+ * descriptor can express the same thing without an invokeModule fn. */
+function resolveFirst(exprOrList, ctx) {
+  const candidates = Array.isArray(exprOrList) ? exprOrList : [exprOrList];
+  for (const expr of candidates) {
+    const value = resolveExpr(expr, ctx);
+    if (value !== undefined && value !== null && value !== "") return value;
+  }
+  return undefined;
+}
+
 function actorItems(actor) {
   const items = actor?.items ?? [];
   return Array.isArray(items) ? items : Array.from(items);
@@ -211,6 +226,26 @@ async function buildItemEntry(section, item, ctx) {
   const itemCtx = { ...ctx, item, sectionId: section.id };
   const entry = { id: item.id, label: item.name, img: item.img };
   if (section.qty) entry.qty = resolveExpr(section.qty, itemCtx);
+  if (section.qtyLabel) entry.qtyLabel = resolveFirst(section.qtyLabel, itemCtx);
+  // `qtyWrite` opts a row into a mobile +/- stepper on the item's own field
+  // (ammo, charges, uses) — a tap-and-hold accordion, not the collapsed row
+  // itself, since that row's tap is already spoken for by `section.invoke`
+  // (the attack/use roll). Mirrors buildResourceEntry's onDelta clamp.
+  if (section.qtyWrite) {
+    const maxVal = section.qtyMax != null ? Number(resolveExpr(section.qtyMax, itemCtx) ?? Infinity) : Infinity;
+    const min = section.qtyMin != null ? Number(resolveExpr(section.qtyMin, itemCtx) ?? 0) : 0;
+    // No stepper for an item that has no room to move (e.g. a melee weapon
+    // whose ammo track is max:0) — matches the real sheet's own pip row
+    // rendering empty/inert for the same case.
+    if (maxVal > min) {
+      entry.qtyEditable = true;
+      entry.onQtyDelta = (delta) => {
+        const current = Number(getProperty(item, section.qtyWrite) ?? 0);
+        const next = Math.min(maxVal, Math.max(min, current + delta));
+        return item.update({ [section.qtyWrite]: next });
+      };
+    }
+  }
   if (section.status) {
     const key = resolveExpr(section.status.source, itemCtx);
     entry.status = resolveLabelFrom(section.status, key, ctx);

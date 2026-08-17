@@ -36,6 +36,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       entryPress: PhoneCompanionApp._onEntryPress,
       entryDelta: PhoneCompanionApp._onEntryDelta,
       entryAction: PhoneCompanionApp._onEntryAction,
+      entryQtyDelta: PhoneCompanionApp._onEntryQtyDelta,
       rawRoll: PhoneCompanionApp._onRawRoll,
       togglePanel: PhoneCompanionApp._onTogglePanel,
       toggleAccordion: PhoneCompanionApp._onToggleAccordion,
@@ -671,6 +672,16 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     const section = this._data?.sections?.find((s) => s.id === sectionId);
     const entry = section?.entries?.find((e) => e.id === entryId);
     entry?.onDelta?.(Number(delta));
+  }
+
+  /** item-list's own qty stepper (ammo/charges/uses) — same clamp-and-write
+   * shape as _onEntryDelta above, but item-scoped (descriptor's `qtyWrite`)
+   * rather than actor-scoped. */
+  static _onEntryQtyDelta(_event, target) {
+    const { sectionId, entryId, delta } = target.dataset;
+    const section = this._data?.sections?.find((s) => s.id === sectionId);
+    const entry = section?.entries?.find((e) => e.id === entryId);
+    entry?.onQtyDelta?.(Number(delta));
   }
 
   /** Icon-row buttons inside an item's expanded accordion body (equipped,

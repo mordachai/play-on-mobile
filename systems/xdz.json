@@ -44,10 +44,14 @@
       "collapsible": true,
       "where": { "type": "weapon" },
       "qty": "@item.system.ammo.value",
+      "qtyLabel": ["@item.system.ammoLabel", "Ammo"],
+      "qtyWrite": "system.ammo.value",
+      "qtyMin": 0,
+      "qtyMax": "@item.system.ammo.max",
       "status": { "source": "@item.system.equipped", "config": "XDZ.mobileEquipLabel" },
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "rollAttack", "args": ["normal"] },
-      "actions": ["edit", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, { "custom": "weaponSecondaryAction" }, "delete"]
+      "actions": ["edit", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, { "custom": "weaponSecondaryAction" }, { "custom": "weaponDamagedAction" }, "delete"]
     },
 
     {

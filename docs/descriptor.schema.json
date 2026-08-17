@@ -163,6 +163,16 @@
         "labelFrom": { "$ref": "#/$defs/labelFrom" },
         "invoke": { "$ref": "#/$defs/invoke" },
         "qty": { "$ref": "#/$defs/expr" },
+        "qtyLabel": {
+          "description": "item-list only. Label shown before the ×N qty suffix on the row (e.g. an item's own ammo-type name). A single expr, or an ordered list of fallback candidates — first non-empty wins.",
+          "oneOf": [{ "$ref": "#/$defs/expr" }, { "type": "array", "items": { "$ref": "#/$defs/expr" } }]
+        },
+        "qtyWrite": {
+          "type": "string",
+          "description": "item-list only. A literal item-relative path (e.g. \"system.ammo.value\") — presence of this field opts the row into a +/- stepper in its expanded accordion body that writes clamped to [qtyMin, qtyMax]."
+        },
+        "qtyMin": { "$ref": "#/$defs/expr" },
+        "qtyMax": { "$ref": "#/$defs/expr" },
         "status": {
           "type": "object",
           "description": "item-list only. Resolves a per-item pill label — `source` is an expression evaluated against the item, its result looked up in the CONFIG map named by `config` (same shape as `labelFrom`).",

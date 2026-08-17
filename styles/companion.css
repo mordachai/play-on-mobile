@@ -1290,6 +1290,44 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   white-space: nowrap;
 }
 
+/* +/- stepper for an item-list row's own writable qty (ammo/charges/uses),
+   sits in the expanded accordion body — same 36px tap target as
+   .pom-item-action, since the collapsed row's tap is already the roll. */
+.pom-item-qty-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.pom-item-qty-label {
+  font-size: 0.75rem;
+  opacity: 0.75;
+}
+
+.pom-item-qty-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.pom-item-qty-btn {
+  min-width: 36px;
+  min-height: 36px;
+  padding: 0;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+}
+
+.pom-item-qty-value {
+  min-width: 1.5em;
+  text-align: center;
+  font-weight: bold;
+}
+
 /* Inventory/magic/spell rows double as accordion triggers on long-press
    (see companion-app.mjs _toggleAccordion) — the wrapper is the actual grid
    cell so it can break out to a full-width row (grid-column: 1 / -1) once

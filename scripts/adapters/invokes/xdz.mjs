@@ -36,15 +36,33 @@ export function readSnapshot(actor) {
  * plain melee weapon) don't get a Secondary/Grenade action at all — the
  * system's own weapon-card only renders that pip row `{{#if system.secondary.max}}`,
  * and item.rollSecondary() has no guard against being called on a weapon
- * that was never given one. Real branching on a per-item field, so this
- * lives in invokeModule rather than a static actions[] entry. */
+ * that was never given one. Only surfaced while the weapon is equipped too,
+ * matching the ammo/damaged tracks: a stowed weapon's resource counts aren't
+ * actionable from the loadout row. Real branching on a per-item field, so
+ * this lives in invokeModule rather than a static actions[] entry. */
 export function weaponSecondaryAction(item) {
-  if (!(item.system.secondary?.max > 0)) return [];
+  if (!item.system.equipped || !(item.system.secondary?.max > 0)) return [];
   return [
     {
       icon: item.system.secondary.die ? "fas fa-explosion" : "fas fa-bolt",
-      label: item.system.secondary.label || "Secondary",
+      label: `${item.system.secondary.label || "Secondary"} ×${item.system.secondary.value}`,
       onSelect: () => item.rollSecondary(),
+    },
+  ];
+}
+
+/** Damaged has no roll of its own (repair/damage happen by tapping the
+ * pips on the weapon's real sheet) — this button just surfaces the current
+ * count on mobile and opens the sheet to change it, same as Edit. Equipped
+ * weapons only: the loadout row is about the weapon currently in hand, and
+ * this keeps parity with weaponSecondaryAction above. */
+export function weaponDamagedAction(item) {
+  if (!item.system.equipped) return [];
+  return [
+    {
+      icon: "fas fa-heart-crack",
+      label: `DMG ×${item.system.damaged.value}`,
+      onSelect: () => item.sheet.render(true),
     },
   ];
 }

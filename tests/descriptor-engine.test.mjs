@@ -107,6 +107,7 @@ test("descriptor-engine: item-list filters by where, resolves qty/description, b
       { id: "inventory", label: "Inventory", render: "item-list",
         where: { type: "weapon", "system.equipped": false },
         qty: "@item.system.quantity",
+        qtyLabel: ["@item.system.ammoLabel", "Ammo"],
         description: "@item.name",
         invoke: { kind: "itemMethod", path: "use" },
         actions: ["edit"] },
@@ -119,10 +120,51 @@ test("descriptor-engine: item-list filters by where, resolves qty/description, b
   assert.equal(entries.length, 1);
   assert.equal(entries[0].label, "Shortbow");
   assert.equal(entries[0].qty, 1);
+  assert.equal(entries[0].qtyLabel, "Ammo");
   assert.equal(entries[0].description, "<p>Shortbow</p>");
   assert.equal(enrichCallCount, 1);
   assert.equal(entries[0].actions.length, 1);
   assert.equal(entries[0].actions[0].label, "Edit");
+});
+
+test("descriptor-engine: qtyWrite gives a clamped +/- stepper, hidden when max<=min", async () => {
+  const actor = makeActor();
+  const dagger = actor.items.find((i) => i.id === "i2"); // quantity: 1, no explicit max on this fixture
+  dagger.system.ammo = { value: 1, max: 3 };
+  dagger.update = async (data) => {
+    for (const [path, value] of Object.entries(data)) {
+      const parts = path.split(".");
+      const last = parts.pop();
+      let cur = dagger;
+      for (const p of parts) cur = cur[p];
+      cur[last] = value;
+    }
+  };
+  const shortbow = actor.items.find((i) => i.id === "i3");
+  shortbow.system.ammo = { value: 0, max: 0 }; // no room to move — melee-style
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    sections: [
+      { id: "weapons", render: "item-list", where: { type: "weapon" },
+        qty: "@item.system.ammo.value", qtyWrite: "system.ammo.value", qtyMin: 0, qtyMax: "@item.system.ammo.max" },
+    ],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML });
+  const data = await adapter.buildSheetData({ actor });
+  const entries = data.sections[0].entries;
+  const daggerEntry = entries.find((e) => e.label === "Dagger");
+  const shortbowEntry = entries.find((e) => e.label === "Shortbow");
+
+  assert.equal(daggerEntry.qtyEditable, true);
+  assert.equal(shortbowEntry.qtyEditable, undefined); // max === min, no stepper
+
+  await daggerEntry.onQtyDelta(1);
+  assert.equal(dagger.system.ammo.value, 2);
+  await daggerEntry.onQtyDelta(5); // clamps at max
+  assert.equal(dagger.system.ammo.value, 3);
+  await daggerEntry.onQtyDelta(-10); // clamps at min
+  assert.equal(dagger.system.ammo.value, 0);
 });
 
 test("descriptor-engine: toggle action flips a boolean item path and swaps label", async () => {

@@ -126,11 +126,14 @@ Add `"when": "@snap.mana"` on an entry to make it vanish entirely for actors tha
   "collapsible": true,
   "where": { "type": ["weapon", "equipment", "consumable"], "system.equipped": false },
   "qty": "@item.system.quantity",
+  "qtyLabel": ["@item.system.ammoLabel", "Ammo"],
   "description": "@item.system.description.value",
   "invoke": { "kind": "itemMethod", "path": "use" },
   "actions": ["use", "toChat", { "action": "toggle", "label": "Equip", "path": "system.equipped" }, "edit", "delete"]
 }
 ```
+
+`qtyLabel` prefixes the ×N suffix with a label (a single expr, or a fallback list — first non-empty wins, as above for a per-item ammo-type name that falls back to a generic default). Add `qtyWrite` (a literal item-relative path, e.g. `"system.ammo.value"`, plus optional `qtyMin`/`qtyMax` exprs) to get a +/- stepper in the item's expanded accordion — the collapsed row's tap is already spoken for by `invoke`, so this lives one level in, next to the description.
 
 **`entry-list`** — name + description accordion over an embedded array that isn't a full item document (class features, traits).
 
