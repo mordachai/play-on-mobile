@@ -127,10 +127,11 @@ test("descriptor-engine: item-list filters by where, resolves qty/description, b
   assert.equal(entries[0].actions[0].label, "Edit");
 });
 
-test("descriptor-engine: qtyWrite gives a clamped +/- stepper, hidden when max<=min", async () => {
+test("descriptor-engine: tracks give one clamped +/- stepper each, per-track `when`, hidden when max<=min", async () => {
   const actor = makeActor();
-  const dagger = actor.items.find((i) => i.id === "i2"); // quantity: 1, no explicit max on this fixture
+  const dagger = actor.items.find((i) => i.id === "i2"); // equipped: true
   dagger.system.ammo = { value: 1, max: 3 };
+  dagger.system.secondary = { value: 2, max: 4 };
   dagger.update = async (data) => {
     for (const [path, value] of Object.entries(data)) {
       const parts = path.split(".");
@@ -140,14 +141,18 @@ test("descriptor-engine: qtyWrite gives a clamped +/- stepper, hidden when max<=
       cur[last] = value;
     }
   };
-  const shortbow = actor.items.find((i) => i.id === "i3");
+  const shortbow = actor.items.find((i) => i.id === "i3"); // equipped: false
   shortbow.system.ammo = { value: 0, max: 0 }; // no room to move — melee-style
+  shortbow.system.secondary = { value: 1, max: 4 }; // has room, but gated by `when` below
   const descriptor = {
     formatVersion: 1,
     system: "test",
     sections: [
       { id: "weapons", render: "item-list", where: { type: "weapon" },
-        qty: "@item.system.ammo.value", qtyWrite: "system.ammo.value", qtyMin: 0, qtyMax: "@item.system.ammo.max" },
+        tracks: [
+          { label: "Ammo", value: "@item.system.ammo.value", write: "system.ammo.value", min: 0, max: "@item.system.ammo.max" },
+          { label: "Secondary", value: "@item.system.secondary.value", write: "system.secondary.value", min: 0, max: "@item.system.secondary.max", when: "@item.system.equipped" },
+        ] },
     ],
   };
   const adapter = createDescriptorAdapter(descriptor, { enrichHTML });
@@ -156,15 +161,21 @@ test("descriptor-engine: qtyWrite gives a clamped +/- stepper, hidden when max<=
   const daggerEntry = entries.find((e) => e.label === "Dagger");
   const shortbowEntry = entries.find((e) => e.label === "Shortbow");
 
-  assert.equal(daggerEntry.qtyEditable, true);
-  assert.equal(shortbowEntry.qtyEditable, undefined); // max === min, no stepper
+  // Dagger is equipped: both tracks present.
+  assert.deepEqual(daggerEntry.qtyTracks.map((t) => t.label), ["Ammo", "Secondary"]);
+  // Shortbow is unequipped: Secondary is gated off by `when`, Ammo is dropped for max===min.
+  assert.equal(shortbowEntry.qtyTracks.length, 0);
 
-  await daggerEntry.onQtyDelta(1);
+  const [ammoTrack, secondaryTrack] = daggerEntry.qtyTracks;
+  await ammoTrack.onDelta(1);
   assert.equal(dagger.system.ammo.value, 2);
-  await daggerEntry.onQtyDelta(5); // clamps at max
+  await ammoTrack.onDelta(5); // clamps at max
   assert.equal(dagger.system.ammo.value, 3);
-  await daggerEntry.onQtyDelta(-10); // clamps at min
+  await ammoTrack.onDelta(-10); // clamps at min
   assert.equal(dagger.system.ammo.value, 0);
+
+  await secondaryTrack.onDelta(-1);
+  assert.equal(dagger.system.secondary.value, 1);
 });
 
 test("descriptor-engine: toggle action flips a boolean item path and swaps label", async () => {

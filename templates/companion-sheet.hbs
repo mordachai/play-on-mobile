@@ -121,14 +121,18 @@
                 {{/each}}
               </div>
               {{/if}}
-              {{#if this.qtyEditable}}
-              <div class="pom-item-qty-row">
-                {{#if this.qtyLabel}}<span class="pom-item-qty-label">{{this.qtyLabel}}</span>{{/if}}
-                <div class="pom-item-qty-controls">
-                  <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="-1" aria-label="Decrease">&minus;</button>
-                  <span class="pom-item-qty-value">{{this.qty}}</span>
-                  <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="1" aria-label="Increase">&plus;</button>
+              {{#if this.qtyTracks.length}}
+              <div class="pom-item-tracks">
+                {{#each this.qtyTracks}}
+                <div class="pom-item-qty-row">
+                  {{#if this.label}}<span class="pom-item-qty-label">{{this.label}}</span>{{/if}}
+                  <div class="pom-item-qty-controls">
+                    <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-track-index="{{@index}}" data-delta="-1" aria-label="Decrease">&minus;</button>
+                    <span class="pom-item-qty-value">{{this.value}}</span>
+                    <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-track-index="{{@index}}" data-delta="1" aria-label="Increase">&plus;</button>
+                  </div>
                 </div>
+                {{/each}}
               </div>
               {{/if}}
               {{{this.description}}}
@@ -160,14 +164,18 @@
                 {{/each}}
               </div>
               {{/if}}
-              {{#if this.qtyEditable}}
-              <div class="pom-item-qty-row">
-                {{#if this.qtyLabel}}<span class="pom-item-qty-label">{{this.qtyLabel}}</span>{{/if}}
-                <div class="pom-item-qty-controls">
-                  <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="-1" aria-label="Decrease">&minus;</button>
-                  <span class="pom-item-qty-value">{{this.qty}}</span>
-                  <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="1" aria-label="Increase">&plus;</button>
+              {{#if this.qtyTracks.length}}
+              <div class="pom-item-tracks">
+                {{#each this.qtyTracks}}
+                <div class="pom-item-qty-row">
+                  {{#if this.label}}<span class="pom-item-qty-label">{{this.label}}</span>{{/if}}
+                  <div class="pom-item-qty-controls">
+                    <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-track-index="{{@index}}" data-delta="-1" aria-label="Decrease">&minus;</button>
+                    <span class="pom-item-qty-value">{{this.value}}</span>
+                    <button type="button" class="pom-item-qty-btn" data-action="entryQtyDelta" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-track-index="{{@index}}" data-delta="1" aria-label="Increase">&plus;</button>
+                  </div>
                 </div>
+                {{/each}}
               </div>
               {{/if}}
               {{{this.description}}}

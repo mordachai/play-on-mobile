@@ -227,24 +227,34 @@ async function buildItemEntry(section, item, ctx) {
   const entry = { id: item.id, label: item.name, img: item.img };
   if (section.qty) entry.qty = resolveExpr(section.qty, itemCtx);
   if (section.qtyLabel) entry.qtyLabel = resolveFirst(section.qtyLabel, itemCtx);
-  // `qtyWrite` opts a row into a mobile +/- stepper on the item's own field
-  // (ammo, charges, uses) — a tap-and-hold accordion, not the collapsed row
-  // itself, since that row's tap is already spoken for by `section.invoke`
-  // (the attack/use roll). Mirrors buildResourceEntry's onDelta clamp.
-  if (section.qtyWrite) {
-    const maxVal = section.qtyMax != null ? Number(resolveExpr(section.qtyMax, itemCtx) ?? Infinity) : Infinity;
-    const min = section.qtyMin != null ? Number(resolveExpr(section.qtyMin, itemCtx) ?? 0) : 0;
-    // No stepper for an item that has no room to move (e.g. a melee weapon
-    // whose ammo track is max:0) — matches the real sheet's own pip row
-    // rendering empty/inert for the same case.
-    if (maxVal > min) {
-      entry.qtyEditable = true;
-      entry.onQtyDelta = (delta) => {
-        const current = Number(getProperty(item, section.qtyWrite) ?? 0);
-        const next = Math.min(maxVal, Math.max(min, current + delta));
-        return item.update({ [section.qtyWrite]: next });
-      };
-    }
+  // `tracks` gives an item-list row one +/- stepper per resource the item
+  // itself carries (a weapon's ammo, secondary/grenade charges, damage taken
+  // — any of them independently) in its expanded accordion body, not the
+  // collapsed row itself, since that row's tap is already spoken for by
+  // `section.invoke` (the attack/use roll). Each track's own `when` lets it
+  // appear only under some item state (XDZ: secondary/damaged only while the
+  // weapon is equipped); a track with no room to move (max === min, e.g. a
+  // melee weapon's ammo track sitting at 0/0) is dropped even without an
+  // explicit `when`, matching the real sheet's own pip row rendering
+  // empty/inert for the same case.
+  if (section.tracks) {
+    entry.qtyTracks = section.tracks
+      .filter((t) => !t.when || resolveExpr(t.when, itemCtx))
+      .map((t) => {
+        const maxVal = t.max != null ? Number(resolveExpr(t.max, itemCtx) ?? Infinity) : Infinity;
+        const min = t.min != null ? Number(resolveExpr(t.min, itemCtx) ?? 0) : 0;
+        if (maxVal <= min) return null;
+        return {
+          label: t.label ? resolveFirst(t.label, itemCtx) : undefined,
+          value: resolveExpr(t.value, itemCtx),
+          onDelta: (delta) => {
+            const current = Number(getProperty(item, t.write) ?? 0);
+            const next = Math.min(maxVal, Math.max(min, current + delta));
+            return item.update({ [t.write]: next });
+          },
+        };
+      })
+      .filter(Boolean);
   }
   if (section.status) {
     const key = resolveExpr(section.status.source, itemCtx);

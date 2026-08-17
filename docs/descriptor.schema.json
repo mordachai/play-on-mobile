@@ -167,12 +167,25 @@
           "description": "item-list only. Label shown before the ×N qty suffix on the row (e.g. an item's own ammo-type name). A single expr, or an ordered list of fallback candidates — first non-empty wins.",
           "oneOf": [{ "$ref": "#/$defs/expr" }, { "type": "array", "items": { "$ref": "#/$defs/expr" } }]
         },
-        "qtyWrite": {
-          "type": "string",
-          "description": "item-list only. A literal item-relative path (e.g. \"system.ammo.value\") — presence of this field opts the row into a +/- stepper in its expanded accordion body that writes clamped to [qtyMin, qtyMax]."
+        "tracks": {
+          "type": "array",
+          "description": "item-list only. One +/- stepper row per entry, in the item's expanded accordion body — a weapon's ammo, secondary charges, damage taken, each independently.",
+          "items": {
+            "type": "object",
+            "required": ["write", "value"],
+            "properties": {
+              "label": {
+                "description": "A single expr, or an ordered list of fallback candidates — first non-empty wins.",
+                "oneOf": [{ "$ref": "#/$defs/expr" }, { "type": "array", "items": { "$ref": "#/$defs/expr" } }]
+              },
+              "value": { "$ref": "#/$defs/expr", "description": "Resolved against the item; the number shown between the +/- buttons." },
+              "write": { "type": "string", "description": "Literal item-relative path this track writes to, e.g. \"system.ammo.value\"." },
+              "min": { "$ref": "#/$defs/expr" },
+              "max": { "$ref": "#/$defs/expr" },
+              "when": { "$ref": "#/$defs/expr", "description": "If resolved falsy, this track is omitted for this item. Also auto-omitted when max<=min (nothing to adjust)." }
+            }
+          }
         },
-        "qtyMin": { "$ref": "#/$defs/expr" },
-        "qtyMax": { "$ref": "#/$defs/expr" },
         "status": {
           "type": "object",
           "description": "item-list only. Resolves a per-item pill label — `source` is an expression evaluated against the item, its result looked up in the CONFIG map named by `config` (same shape as `labelFrom`).",

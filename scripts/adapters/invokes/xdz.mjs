@@ -50,19 +50,3 @@ export function weaponSecondaryAction(item) {
     },
   ];
 }
-
-/** Damaged has no roll of its own (repair/damage happen by tapping the
- * pips on the weapon's real sheet) — this button just surfaces the current
- * count on mobile and opens the sheet to change it, same as Edit. Equipped
- * weapons only: the loadout row is about the weapon currently in hand, and
- * this keeps parity with weaponSecondaryAction above. */
-export function weaponDamagedAction(item) {
-  if (!item.system.equipped) return [];
-  return [
-    {
-      icon: "fas fa-heart-crack",
-      label: `DMG ×${item.system.damaged.value}`,
-      onSelect: () => item.sheet.render(true),
-    },
-  ];
-}

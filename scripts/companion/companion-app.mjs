@@ -674,14 +674,15 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     entry?.onDelta?.(Number(delta));
   }
 
-  /** item-list's own qty stepper (ammo/charges/uses) — same clamp-and-write
-   * shape as _onEntryDelta above, but item-scoped (descriptor's `qtyWrite`)
-   * rather than actor-scoped. */
+  /** item-list's own per-track stepper (ammo/secondary/damaged, etc.) — same
+   * clamp-and-write shape as _onEntryDelta above, but item-scoped
+   * (descriptor's `tracks`) rather than actor-scoped, and indexed since a
+   * row can carry more than one track at once. */
   static _onEntryQtyDelta(_event, target) {
-    const { sectionId, entryId, delta } = target.dataset;
+    const { sectionId, entryId, delta, trackIndex } = target.dataset;
     const section = this._data?.sections?.find((s) => s.id === sectionId);
     const entry = section?.entries?.find((e) => e.id === entryId);
-    entry?.onQtyDelta?.(Number(delta));
+    entry?.qtyTracks?.[Number(trackIndex)]?.onDelta?.(Number(delta));
   }
 
   /** Icon-row buttons inside an item's expanded accordion body (equipped,

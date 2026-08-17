@@ -133,7 +133,14 @@ Add `"when": "@snap.mana"` on an entry to make it vanish entirely for actors tha
 }
 ```
 
-`qtyLabel` prefixes the ×N suffix with a label (a single expr, or a fallback list — first non-empty wins, as above for a per-item ammo-type name that falls back to a generic default). Add `qtyWrite` (a literal item-relative path, e.g. `"system.ammo.value"`, plus optional `qtyMin`/`qtyMax` exprs) to get a +/- stepper in the item's expanded accordion — the collapsed row's tap is already spoken for by `invoke`, so this lives one level in, next to the description.
+`qtyLabel` prefixes the ×N suffix with a label (a single expr, or a fallback list — first non-empty wins, as above for a per-item ammo-type name that falls back to a generic default). Add `tracks` (an array — one +/- stepper row per item resource: ammo, secondary charges, damage taken) to get steppers in the item's expanded accordion — the collapsed row's tap is already spoken for by `invoke`, so these live one level in, next to the description. Each track has `value`/`write` (a literal item-relative path)/`min`/`max`, plus an optional `when` to show it only under some item state (XDZ: secondary/damaged steppers only while the weapon is equipped):
+
+```json
+"tracks": [
+  { "label": ["@item.system.ammoLabel", "Ammo"], "value": "@item.system.ammo.value", "write": "system.ammo.value", "min": 0, "max": "@item.system.ammo.max" },
+  { "label": ["@item.system.secondary.label", "Secondary"], "value": "@item.system.secondary.value", "write": "system.secondary.value", "min": 0, "max": "@item.system.secondary.max", "when": "@item.system.equipped" }
+]
+```
 
 **`entry-list`** — name + description accordion over an embedded array that isn't a full item document (class features, traits).
 

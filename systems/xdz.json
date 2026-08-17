@@ -45,13 +45,15 @@
       "where": { "type": "weapon" },
       "qty": "@item.system.ammo.value",
       "qtyLabel": ["@item.system.ammoLabel", "Ammo"],
-      "qtyWrite": "system.ammo.value",
-      "qtyMin": 0,
-      "qtyMax": "@item.system.ammo.max",
+      "tracks": [
+        { "label": ["@item.system.ammoLabel", "Ammo"], "value": "@item.system.ammo.value", "write": "system.ammo.value", "min": 0, "max": "@item.system.ammo.max" },
+        { "label": ["@item.system.secondary.label", "Secondary"], "value": "@item.system.secondary.value", "write": "system.secondary.value", "min": 0, "max": "@item.system.secondary.max", "when": "@item.system.equipped" },
+        { "label": "Damaged", "value": "@item.system.damaged.value", "write": "system.damaged.value", "min": 0, "max": "@item.system.damaged.max", "when": "@item.system.equipped" }
+      ],
       "status": { "source": "@item.system.equipped", "config": "XDZ.mobileEquipLabel" },
       "description": "@item.system.description",
       "invoke": { "kind": "itemMethod", "path": "rollAttack", "args": ["normal"] },
-      "actions": ["edit", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, { "custom": "weaponSecondaryAction" }, { "custom": "weaponDamagedAction" }, "delete"]
+      "actions": ["edit", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, { "custom": "weaponSecondaryAction" }, "delete"]
     },
 
     {

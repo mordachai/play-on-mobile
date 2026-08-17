@@ -1,7 +1,7 @@
 {
   "id": "play-on-mobile",
   "title": "Play on Mobile",
-  "version": "0.7.1",
+  "version": "0.7.2",
   "compatibility": {
     "minimum": "14",
     "verified": "14"

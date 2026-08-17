@@ -1290,14 +1290,21 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   white-space: nowrap;
 }
 
-/* +/- stepper for an item-list row's own writable qty (ammo/charges/uses),
-   sits in the expanded accordion body — same 36px tap target as
-   .pom-item-action, since the collapsed row's tap is already the roll. */
+/* +/- stepper(s) for an item-list row's own writable tracks (ammo, secondary
+   charges, damage taken, ...), one row each, in the expanded accordion body
+   — same 36px tap target as .pom-item-action, since the collapsed row's tap
+   is already the roll. */
+.pom-item-tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 0.5rem;
+}
+
 .pom-item-qty-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-bottom: 0.5rem;
 }
 
 .pom-item-qty-label {
