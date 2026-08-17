@@ -1,8 +1,13 @@
 import { MODULE_ID } from "../settings.mjs";
 
 /** Injects the manifest link and registers the static-asset service worker.
- * Both are cheap/no-op if unsupported, safe to call unconditionally. */
+ * Both are cheap/no-op if unsupported, safe to call unconditionally — except
+ * for a GM, who is skipped entirely: this module's installable-app identity
+ * is for players, and a GM device that also runs fgm-tools (a GM-only phone
+ * remote) needs that module's manifest to be the one a browser picks, not
+ * this one. Only one <link rel="manifest"> is ever honored per page. */
 export function registerServiceWorker() {
+  if (game.user.isGM) return;
   injectManifestLink();
 
   if ("serviceWorker" in navigator) {

@@ -1,0 +1,64 @@
+{
+  "formatVersion": 1,
+  "system": "xdz",
+  "label": "Xeno Dead Zone",
+  "invokeModule": "/modules/play-on-mobile/scripts/adapters/invokes/xdz.mjs",
+  "snapshot": { "custom": "readSnapshot" },
+
+  "header": {
+    "subtitle": ["@system.rank", "@system.quirk"]
+  },
+
+  "sections": [
+    {
+      "id": "vitals",
+      "render": "resources",
+      "label": "Injuries",
+      "entries": [
+        { "key": "injuries", "label": "Injuries", "value": "@system.injuries.value", "max": "@system.injuries.max", "write": "system.injuries.value", "min": 0, "editable": true, "when": "@system.injuries" }
+      ]
+    },
+
+    {
+      "id": "training",
+      "render": "check-grid",
+      "label": "Training",
+      "source": "@snap.training",
+      "labelFrom": { "config": "XDZ.trainings", "localize": true },
+      "invoke": { "kind": "actorMethod", "path": "rollTraining", "args": ["{key}"] }
+    },
+
+    {
+      "id": "resistances",
+      "render": "check-grid",
+      "label": "Resistances",
+      "source": "@snap.resistances",
+      "labelFrom": { "config": "XDZ.resistances", "localize": true },
+      "invoke": { "kind": "actorMethod", "path": "rollResistance", "args": ["{key}"] }
+    },
+
+    {
+      "id": "weapons",
+      "render": "item-list",
+      "label": "Loadout",
+      "collapsible": true,
+      "where": { "type": "weapon" },
+      "qty": "@item.system.ammo.value",
+      "status": { "source": "@item.system.equipped", "config": "XDZ.mobileEquipLabel" },
+      "description": "@item.system.description",
+      "invoke": { "kind": "itemMethod", "path": "rollAttack", "args": ["normal"] },
+      "actions": ["edit", { "action": "toggle", "path": "system.equipped", "label": "Equip", "offLabel": "Unequip" }, { "custom": "weaponSecondaryAction" }, "delete"]
+    },
+
+    {
+      "id": "gear",
+      "render": "item-list",
+      "label": "Gear",
+      "collapsible": true,
+      "where": { "type": "gear" },
+      "qty": "@item.system.quantity",
+      "description": "@item.system.description",
+      "actions": ["toChat", "edit", "delete"]
+    }
+  ]
+}

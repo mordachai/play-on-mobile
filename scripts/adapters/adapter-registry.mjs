@@ -6,6 +6,7 @@ import vagabondDescriptor from "../../systems/vagabond.json" with { type: "json"
 import oseDescriptor from "../../systems/ose.json" with { type: "json" };
 import alienrpgDescriptor from "../../systems/alienrpg.json" with { type: "json" };
 import shadowdarkDescriptor from "../../systems/shadowdark.json" with { type: "json" };
+import xdzDescriptor from "../../systems/xdz.json" with { type: "json" };
 
 // Shipped, built-in descriptors — precedence tier 3. See
 // docs/system-adapters-plan.md §7 for the full precedence order.
@@ -14,6 +15,7 @@ const SHIPPED = {
   ose: oseDescriptor,
   alienrpg: alienrpgDescriptor,
   shadowdark: shadowdarkDescriptor,
+  xdz: xdzDescriptor,
 };
 
 // isAvailable overrides for shipped descriptors — game.system.id alone isn't
