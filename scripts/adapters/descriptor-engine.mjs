@@ -152,6 +152,10 @@ function buildKeyValueEntry(section, key, entry, ctx) {
   else if (section.label !== undefined) out.label = section.label;
   if (section.active) out.active = !!resolveExpr(section.active, entryCtx);
   if (section.invoke) {
+    // Boolean flag for the template (never test the closure itself there:
+    // Handlebars calls function-valued properties). stat-row renders a
+    // tappable chip only when this is set; check-grid is always a button.
+    out.pressable = true;
     out.onPress = (mods) =>
       runInvoke(section.invoke, { ...entryCtx, event: mods, custom: ctx.custom, runtime: ctx.runtime });
   }
@@ -367,6 +371,11 @@ async function buildSection(section, ctx) {
     label: section.label,
     collapsible: !!section.collapsible,
     cssClass: section.cssClass,
+    // Both read by companion-app.mjs: `revealWith: "header"` keeps a section
+    // hidden until the name header is expanded (vagabond's ability scores);
+    // `hideIfEmpty: false` keeps an empty section on screen.
+    revealWith: section.revealWith,
+    hideIfEmpty: section.hideIfEmpty,
     entries: await build(section, ctx),
   };
   if (section.icon) out.icon = resolveExpr(section.icon, ctx);
@@ -385,13 +394,25 @@ async function buildSection(section, ctx) {
   return out;
 }
 
+/** Descriptors name their invokeModule as a server-root path
+ * ("/modules/<id>/..."). A Foundry server mounted under a route prefix
+ * (e.g. /foundry) serves it at "/foundry/modules/..." instead, so root
+ * paths go through Foundry's own route helper. Relative paths and
+ * full URLs pass through; so does everything outside a running Foundry
+ * (unit tests). */
+export function resolveModulePath(path) {
+  if (typeof path !== "string" || !path.startsWith("/") || path.startsWith("//")) return path;
+  const getRoute = typeof foundry !== "undefined" ? foundry.utils?.getRoute : undefined;
+  return typeof getRoute === "function" ? getRoute(path) : path;
+}
+
 /** Loads a descriptor's `invokeModule` (custom invoke fns / predicates /
  * action builders) once and caches it on the phoneApp instance. */
 async function loadCustom(descriptor, phoneApp, opts) {
   if (phoneApp._descriptorCustom) return phoneApp._descriptorCustom;
   if (!descriptor.invokeModule) return (phoneApp._descriptorCustom = {});
   const importModule = opts.importModule ?? ((path) => import(path));
-  phoneApp._descriptorCustom = await importModule(descriptor.invokeModule);
+  phoneApp._descriptorCustom = await importModule(resolveModulePath(descriptor.invokeModule));
   return phoneApp._descriptorCustom;
 }
 

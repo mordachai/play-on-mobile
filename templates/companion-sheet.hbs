@@ -59,10 +59,17 @@
       {{#if this.isStatRow}}
       <div class="pom-stats-row">
         {{#each this.entries}}
+        {{#if this.pressable}}
+        <button type="button" class="pom-stat pom-stat-press{{#if this.active}} pom-active{{/if}}" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}">
+          <span class="pom-stat-abbr">{{this.abbr}}</span>
+          <span class="pom-stat-value">{{this.value}}</span>
+        </button>
+        {{else}}
         <div class="pom-stat">
           <span class="pom-stat-abbr">{{this.abbr}}</span>
           <span class="pom-stat-value">{{this.value}}</span>
         </div>
+        {{/if}}
         {{/each}}
       </div>
       {{/if}}

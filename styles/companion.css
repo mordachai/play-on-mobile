@@ -953,6 +953,22 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   padding: 0.25rem 0.15rem;
 }
 
+/* Rollable stat chip (stat-row with an `invoke`, e.g. Alien RPG attributes):
+   a <button>, so reset core's bare button look back to the chip's own, plus
+   a border to read as tappable next to the display-only chips. */
+button.pom-stat.pom-stat-press {
+  width: auto;
+  min-width: 0;
+  height: auto;
+  margin: 0;
+  gap: 0;
+  border: var(--b-1);
+  color: var(--pom-color-1-text);
+  line-height: normal;
+  white-space: normal;
+  cursor: pointer;
+}
+
 .pom-stat-abbr {
   font-size: var(--pom-font-stat-abbr, 0.7rem);
   color: var(--pom-color-1-text);

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { createDescriptorAdapter } from "../scripts/adapters/descriptor-engine.mjs";
+import { createDescriptorAdapter, resolveModulePath } from "../scripts/adapters/descriptor-engine.mjs";
 
 function makeActor(overrides = {}) {
   const state = {
@@ -567,4 +567,51 @@ test("descriptor-engine: custom item actions carrying a `stepper` move into qtyT
   assert.equal(dagger.qtyTracks[0].value, 3);
   dagger.qtyTracks[0].onDelta(-1);
   assert.deepEqual(deltas, [-1]);
+});
+
+test("descriptor-engine: revealWith and hideIfEmpty pass through to the built section (the app reads both)", async () => {
+  const actor = makeActor();
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    sections: [
+      { id: "abilities", render: "stat-row", source: "@system.abilities", value: "@.value", revealWith: "header" },
+      { id: "empty", render: "check-grid", source: "@system.nothing", hideIfEmpty: false },
+    ],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML });
+  const [abilities, empty] = (await adapter.buildSheetData({ actor })).sections;
+  assert.equal(abilities.revealWith, "header");
+  assert.equal(empty.id, "empty");
+  assert.equal(empty.hideIfEmpty, false);
+  assert.equal(empty.entries.length, 0);
+});
+
+test("descriptor-engine: stat-row/check-grid entries with an invoke are flagged pressable; without one they aren't", async () => {
+  const actor = makeActor();
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    sections: [
+      { id: "rollable", render: "stat-row", source: "@system.abilities", value: "@.value", invoke: { kind: "formula", formula: "1d6" } },
+      { id: "plain", render: "stat-row", source: "@system.abilities", value: "@.value" },
+    ],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML });
+  const [rollable, plain] = (await adapter.buildSheetData({ actor })).sections;
+  assert.ok(rollable.entries.every((e) => e.pressable === true && typeof e.onPress === "function"));
+  assert.ok(plain.entries.every((e) => e.pressable === undefined && e.onPress === undefined));
+});
+
+test("resolveModulePath: root paths go through foundry.utils.getRoute when available; others pass through", () => {
+  assert.equal(resolveModulePath("/modules/x/a.mjs"), "/modules/x/a.mjs"); // no foundry global under node
+  globalThis.foundry = { utils: { getRoute: (p) => `/prefix/${p.replace(/^\/+/, "")}` } };
+  try {
+    assert.equal(resolveModulePath("/modules/x/a.mjs"), "/prefix/modules/x/a.mjs");
+    assert.equal(resolveModulePath("modules/x/a.mjs"), "modules/x/a.mjs");
+    assert.equal(resolveModulePath("https://cdn.example/a.mjs"), "https://cdn.example/a.mjs");
+    assert.equal(resolveModulePath("//cdn.example/a.mjs"), "//cdn.example/a.mjs");
+  } finally {
+    delete globalThis.foundry;
+  }
 });

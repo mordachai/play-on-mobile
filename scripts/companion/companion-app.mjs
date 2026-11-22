@@ -1,5 +1,6 @@
 import { MODULE_ID } from "../settings.mjs";
 import { getAdapter } from "../adapters/adapter-registry.mjs";
+import { GenericAdapter } from "../adapters/generic-adapter.mjs";
 import { buildChatData, sendChatMessage } from "./chat-panel.mjs";
 import { buildJournalData, openJournalEntry } from "./journal-panel.mjs";
 import {
@@ -97,6 +98,11 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       this._onDocChange(parent?.documentName === "Item" ? parent.actor : parent);
     };
     const onCanvasEvent = () => this._scheduleRender();
+    // Edits (a GM revealing a blind roll, a damage card updating) and
+    // deletions only matter while the chat tab is the one showing.
+    const onChatEdit = () => {
+      if (this._activeTab === "chat") this._scheduleRender();
+    };
 
     this._hooks = [
       ["updateActor", onActorDoc],
@@ -107,6 +113,8 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       ["updateActiveEffect", onEffectDoc],
       ["deleteActiveEffect", onEffectDoc],
       ["createChatMessage", onCanvasEvent],
+      ["updateChatMessage", onChatEdit],
+      ["deleteChatMessage", onChatEdit],
       ["updatePlaylist", onCanvasEvent],
       ["updatePlaylistSound", onCanvasEvent],
       ["play-on-mobile.reconnected", onCanvasEvent],
@@ -138,12 +146,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       };
     }
 
-    if (!this._handlersReady) {
-      await this.adapter.initHandlers(this);
-      this._handlersReady = true;
-    }
-
-    const sheetData = await this.adapter.buildSheetData(this);
+    const sheetData = await this._buildSheetDataSafely();
     // Chat rendering calls each message's own renderHTML() — real work, so
     // only pay for it when that tab is actually the one showing.
     const chatData = this._activeTab === "chat" ? await buildChatData() : { chatMessages: [] };
@@ -235,6 +238,34 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       // Settings tab is actually showing (walks every registered setting).
       foundryGroups: this._activeTab === "settings" ? buildForeignSettingsGroups(this._expandedAccordions) : [],
     };
+  }
+
+  /** A system adapter that can't initialize (its invokeModule failed to
+   * import — a moved file, a server route prefix, a system update that
+   * renamed something it imports) would otherwise reject this render after
+   * Mobile Mode has already hidden the desktop UI, leaving the player on an
+   * empty screen. Instead fall back to the generic read-only sheet for the
+   * rest of the session — raw-formula rolling, chat, journal and settings
+   * all keep working — and say so in the console. */
+  async _buildSheetDataSafely() {
+    try {
+      if (!this._handlersReady) {
+        await this.adapter.initHandlers(this);
+        this._handlersReady = true;
+      }
+      return await this.adapter.buildSheetData(this);
+    } catch (err) {
+      if (this.adapter === GenericAdapter) throw err;
+      console.error(
+        `Play on Mobile | the "${this.adapter.id}" sheet failed to load — falling back to the generic sheet`,
+        err
+      );
+      this.adapter = GenericAdapter;
+      this._handlersReady = false;
+      await this.adapter.initHandlers(this);
+      this._handlersReady = true;
+      return this.adapter.buildSheetData(this);
+    }
   }
 
   /** Every accordion toggle / actor update / setting flip goes through a

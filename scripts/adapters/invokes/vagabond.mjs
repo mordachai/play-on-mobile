@@ -19,7 +19,9 @@
  * on the phoneApp instance (see descriptor-engine.mjs loadCustom()).
  */
 
-const SYS = "/systems/vagabond/module";
+// Through Foundry's route helper so a server mounted under a route prefix
+// (e.g. /foundry/systems/...) still resolves the system's files.
+const SYS = foundry.utils.getRoute("systems/vagabond/module");
 
 /** Every vagabond module this file needs, imported once up front (top-level
  * await) so the synchronous snapshot read below can use them. Same URLs

@@ -5,8 +5,11 @@
  * companion app never presents stale game state as current.
  */
 
-const CACHE_NAME = "play-on-mobile-static-v2";
-const MODULE_ROOT = "/modules/play-on-mobile/";
+const CACHE_PREFIX = "play-on-mobile-static-";
+const CACHE_NAME = `${CACHE_PREFIX}v2`;
+// Derived from this worker's own URL rather than hardcoded, so a Foundry
+// server mounted under a route prefix (e.g. /foundry/modules/...) works too.
+const MODULE_ROOT = new URL("./", self.location).pathname;
 
 const STATIC_ASSETS = [
   `${MODULE_ROOT}styles/companion.css`,
@@ -26,7 +29,11 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
       .keys()
-      .then((keys) => Promise.all(keys.filter((k) => k !== CACHE_NAME).map((k) => caches.delete(k))))
+      // Cache Storage is shared by the whole origin — only ever prune this
+      // module's own superseded caches, never another module's or app's.
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k.startsWith(CACHE_PREFIX) && k !== CACHE_NAME).map((k) => caches.delete(k)))
+      )
   );
   self.clients.claim();
 });

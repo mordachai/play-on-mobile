@@ -12,7 +12,10 @@ export function registerServiceWorker() {
 
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
-      .register(`/modules/${MODULE_ID}/service-worker.js`, { scope: `/modules/${MODULE_ID}/` })
+      .register(foundry.utils.getRoute(`modules/${MODULE_ID}/service-worker.js`), {
+        // getRoute strips trailing slashes; a scope must keep its own.
+        scope: `${foundry.utils.getRoute(`modules/${MODULE_ID}`)}/`,
+      })
       .catch((err) => console.warn("Play on Mobile | service worker registration failed", err));
   }
 }
@@ -21,7 +24,7 @@ function injectManifestLink() {
   if (document.head.querySelector('link[rel="manifest"][data-play-on-mobile]')) return;
   const link = document.createElement("link");
   link.rel = "manifest";
-  link.href = `/modules/${MODULE_ID}/static/manifest.webmanifest`;
+  link.href = foundry.utils.getRoute(`modules/${MODULE_ID}/static/manifest.webmanifest`);
   link.dataset.playOnMobile = "true";
   document.head.appendChild(link);
 }
