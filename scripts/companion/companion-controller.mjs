@@ -6,6 +6,8 @@ import { initDialogScrollGesture } from "../gestures/dialog-scroll.mjs";
 import { initDialogZoomGesture } from "../gestures/dialog-zoom.mjs";
 import { initDialogFit } from "../gestures/dialog-fit.mjs";
 import { applyCompanionSettingsPreset } from "../gm/settings-preset.mjs";
+import { getActiveDescriptor } from "../adapters/adapter-registry.mjs";
+import { initAppSuppression } from "./suppress-apps.mjs";
 
 const BODY_CLASS = "pom-companion-mode";
 
@@ -20,6 +22,7 @@ export const CompanionController = {
     await applyCompanionSettingsPreset();
 
     document.body.classList.add(BODY_CLASS);
+    initAppSuppression(getActiveDescriptor()?.suppressApps);
     // Canvas stays live: it's the map view now, mirrored to the TV via the
     // phone's own screen-mirroring, not a separate hidden-away thing.
     initCanvasGestures();

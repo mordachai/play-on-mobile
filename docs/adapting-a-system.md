@@ -96,6 +96,12 @@ Every section needs a unique `id` and a `render` type. There are six renderers, 
 
 Add `"when": "@snap.mana"` on an entry to make it vanish entirely for actors that don't have that pool at all — distinct from a value of `0`.
 
+A few more entry options, for pools that are more than a number:
+
+- `"options": [{ "value": "favor", "label": "Favor" }, ...]` with `write` renders a full-width segmented choice instead of a value — tapping one writes it. For a persistent roll-mode toggle (vagabond's Favor / Hinder). `default` is the choice shown when the field is empty.
+- `"deltaInvoke": { ... }` routes the +/- steppers through an invoke (the step is `ctx.vars.delta`) instead of the plain clamp-and-write — use it when changing the pool does something else in the system, such as posting a chat card or rolling a die (vagabond's Luck and Studied Die).
+- `"invoke": { ... }` makes the label tappable; `"pressWhen"` keeps it inert until it means something; `"active"` lights the cell (vagabond: the Speed label takes / ends the Rush Action and stays lit while Rushing).
+
 **`stat-row`** — a row of abbreviation/value chips (ability scores).
 
 ```json
@@ -115,6 +121,8 @@ Add `"when": "@snap.mana"` on an entry to make it vanish entirely for actors tha
   "invoke": { "kind": "actorMethod", "path": "rollSkill", "args": [{ "skill": "{key}" }] }
 }
 ```
+
+For a `source` keyed by opaque ids rather than a CONFIG table (an effect id, an `"<itemId>|<path>"` action key), label each entry from the entry itself with `"name": "@.label"`, and light it with `"active": "@.active"` (vagabond's Actions and Status grids).
 
 **`item-list`** — image/name/quantity rows over `actor.items`, filtered by `where`; tap invokes, long-press opens an action accordion.
 
@@ -167,7 +175,17 @@ The icon row on an expanded item-list entry:
 | `{ "action": "invoke", "invoke": {...} }` | Runs an arbitrary invoke |
 | `{ "custom": "itemActions" }` | Whole action list built by a function in `invokeModule` — use this when the rule has real branching |
 
+A `custom` action function may also return a stepper instead of a button — `{ "label": "Quantity", "stepper": { "value": 3, "onDelta": (delta) => ... } }` — which joins the item's `tracks` steppers. Set `hidden: true` on an action to leave it out.
+
 A section can also show a small pill next to each item's name via `status: { source, config }` — `source` is an expression evaluated per-item, its result looked up in the CONFIG map named by `config` (same shape as `labelFrom`). Pairs naturally with `cycle`: don't filter multi-state items out of the list with `where`, show all of them and let the pill say which state they're in (see `systems/alienrpg.json`'s weapons/armor/gear sections).
+
+## Hiding desktop overlays
+
+Some systems open floating overlays of their own that make no sense on a phone and sit on top of the map. List them under a top-level `suppressApps` as CSS selectors matched against each ApplicationV2's root element. In Mobile Mode a match is hidden at once and closed as soon as it renders; desktop players aren't affected.
+
+```json
+"suppressApps": ["#vagabond-combat-carousel", ".vbd-hud"]
+```
 
 ## Invokes — how a tap actually does something
 

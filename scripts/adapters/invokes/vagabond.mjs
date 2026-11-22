@@ -1,44 +1,112 @@
 /**
  * Custom invokes/predicates/actions for systems/vagabond.json — the code
  * side of the vagabond descriptor. Everything the JSON layout genuinely
- * cannot express safely lives here: calls into vagabond's own
- * RollHandler/SpellHandler (never reimplement dice), EquipmentHelper's
- * isEquipped()/isWeapon() helpers (see the "inconsistency in vagabond
- * itself" note below — the plain JSON `where` vocabulary must not
- * re-guess this), and the Use-visibility/action-set branching that used
- * to live in vagabond-adapter.mjs's buildItemActions().
+ * cannot express safely lives here, and every piece of it DELEGATES to
+ * vagabond's own code rather than re-implementing it:
+ *  - rolls: RollHandler / SpellHandler (same classes the desktop sheet uses);
+ *  - item taps: activateHandItem() — the desktop sheet's own rollWeapon /
+ *    useItem path (auto-equip a hand item, light-source toggle, attack, use);
+ *  - item / spell long-press menus: buildItemMenuItems() /
+ *    buildSpellMenuItems() — the exact entry set the desktop sheet, HUD and
+ *    inventory grid show on right-click (Attack with <skill>, Throw,
+ *    Quantity, Stack, grip, Equip in Hands / Belt, Bind, Focus, Favorite…),
+ *    so the phone tracks vagabond as it changes instead of drifting;
+ *  - pools with side effects (Luck, Studied Die, Check Mod, Rush, Feature
+ *    Actions, status cards): ActorActions' own static sheet handlers,
+ *    called against the actor's real (unrendered) sheet instance.
  *
  * Loaded once per companion session via descriptor.invokeModule and cached
  * on the phoneApp instance (see descriptor-engine.mjs loadCustom()).
  */
 
-// Cached after first dynamic import — avoids re-fetching on every tap.
-let _handlerClasses = null;
-async function loadHandlerClasses() {
-  if (_handlerClasses) return _handlerClasses;
-  const [{ RollHandler }, { SpellHandler }] = await Promise.all([
-    import("/systems/vagabond/module/sheets/handlers/roll-handler.mjs"),
-    import("/systems/vagabond/module/sheets/handlers/spell-handler.mjs"),
-  ]);
-  _handlerClasses = { RollHandler, SpellHandler };
-  return _handlerClasses;
-}
+const SYS = "/systems/vagabond/module";
 
-/** Lazily creates and caches RollHandler/SpellHandler on phoneApp — same
- * instances vagabond-adapter.mjs used to create eagerly in initHandlers().
- * Lazy here instead: nothing in the generic engine needs to know these
- * exist until an invoke actually fires. */
-async function getHandlers(phoneApp) {
-  if (!phoneApp._rollHandler) {
-    const { RollHandler, SpellHandler } = await loadHandlerClasses();
+/** Every vagabond module this file needs, imported once up front (top-level
+ * await) so the synchronous snapshot read below can use them. Same URLs
+ * vagabond itself resolves, so these are the very same module instances —
+ * static registries like FeatureAction's live-state map are shared. Each
+ * import is settled independently: a file vagabond moves or renames later
+ * drops only the features built on it, not the whole sheet. */
+const V = await (async () => {
+  const specs = {
+    handlers: `${SYS}/sheets/handlers/_module.mjs`,
+    itemMenu: `${SYS}/helpers/item-menu.mjs`,
+    handItem: `${SYS}/helpers/hand-item-activation.mjs`,
+    actorActions: `${SYS}/sheets/actor-actions.mjs`,
+    featureAction: `${SYS}/helpers/feature-action.mjs`,
+    rush: `${SYS}/helpers/rush-helper.mjs`,
+  };
+  const entries = await Promise.all(
+    Object.entries(specs).map(async ([name, url]) => {
+      try {
+        return [name, await import(url)];
+      } catch (err) {
+        console.warn(`play-on-mobile | vagabond: could not load ${url} — dependent features disabled`, err);
+        return [name, null];
+      }
+    })
+  );
+  return Object.fromEntries(entries);
+})();
+
+const { RollHandler, SpellHandler, EquipmentHandler } = V.handlers ?? {};
+const { buildItemMenuItems, buildSpellMenuItems, itemHasUse } = V.itemMenu ?? {};
+const { activateHandItem } = V.handItem ?? {};
+const { ActorActions } = V.actorActions ?? {};
+const { FeatureAction } = V.featureAction ?? {};
+const { RushHelper } = V.rush ?? {};
+
+/** RollHandler / SpellHandler / EquipmentHandler, created lazily and cached
+ * on phoneApp — re-created when the bound actor changes (the handlers
+ * capture `sheet.actor` at construction, so a cached set would otherwise
+ * keep rolling for the previously picked actor).
+ *
+ * EquipmentHandler gets a minimal sheet shim rather than phoneApp: its
+ * methods call `this.sheet.submit()` when `hasFrame` is set, and the
+ * companion app has no form to submit. */
+function getHandlers(phoneApp) {
+  const actor = phoneApp.actor;
+  if (phoneApp._vagabondHandlersFor !== actor) {
     phoneApp._rollHandler = new RollHandler(phoneApp, { npcMode: false });
     phoneApp._spellHandler = new SpellHandler(phoneApp);
+    phoneApp._equipmentHandler = EquipmentHandler ? new EquipmentHandler({ actor, hasFrame: false }) : null;
+    phoneApp._vagabondHandlersFor = actor;
   }
-  return { rollHandler: phoneApp._rollHandler, spellHandler: phoneApp._spellHandler };
+  return {
+    rollHandler: phoneApp._rollHandler,
+    spellHandler: phoneApp._spellHandler,
+    equipmentHandler: phoneApp._equipmentHandler,
+  };
 }
 
-function blankEvent() {
-  return { preventDefault() {}, shiftKey: false, ctrlKey: false };
+/** Stand-in for the DOM event a desktop sheet handler receives. `mods`
+ * carries the tap's shift/ctrl (a held modifier on a tablet keyboard) and,
+ * for ActorActions handlers that branch on it, the mouse button. */
+function fakeEvent(mods = {}) {
+  return {
+    preventDefault() {},
+    stopPropagation() {},
+    shiftKey: !!mods.shiftKey,
+    ctrlKey: !!mods.ctrlKey,
+    altKey: !!mods.altKey,
+    button: mods.button ?? 0,
+    type: mods.type ?? "click",
+    clientX: 0,
+    clientY: 0,
+  };
+}
+
+/** Calls one of ActorActions' static desktop-sheet handlers with the real
+ * sheet instance as `this` (it reads `this.actor`), exactly as the sheet's
+ * own action dispatch would. `actor.sheet` only constructs the sheet object
+ * — nothing renders. */
+function sheetAction(actor, name, mods, dataset = {}) {
+  const fn = ActorActions?.[name];
+  if (typeof fn !== "function") {
+    console.warn(`play-on-mobile | vagabond: ActorActions.${name} not found`);
+    return undefined;
+  }
+  return fn.call(actor.sheet, fakeEvent(mods), { dataset });
 }
 
 /** The descriptor's `snapshot` field — VagabondActor.read() unwraps/renames
@@ -46,12 +114,71 @@ function blankEvent() {
  * {value,max} pair, character-vs-NPC speed shapes -> one {base} shape, ...)
  * in ways plain @system paths can't express; delegating to it here means
  * the descriptor never re-implements that logic. Also folds in the
- * inventory slot calc (clamped, defaulted) for the same reason. */
+ * inventory slot calc and the sheet-only reads the phone needs (Rush state,
+ * feature actions, active statuses). */
 export function readSnapshot(actor) {
   const snap = globalThis.vagabond.documents.VagabondActor.read(actor) ?? {};
-  const inv = actor.system?.inventory;
+  const s = actor.system ?? {};
+  const inv = s.inventory;
   snap.slots = inv && inv.maxSlots != null ? { available: Math.max(0, inv.availableSlots ?? inv.maxSlots), max: inv.maxSlots } : null;
+
+  snap.favorHinder = s.favorHinder || "none";
+  snap.hasFavorHinder = s.favorHinder !== undefined;
+  snap.checkBonus = s.manualCheckBonus ?? 0;
+  snap.studiedDice = s.studiedDice ?? 0;
+  snap.canLevelUp = !!s.attributes?.canLevelUp;
+
+  // Speed label = Rush toggle on desktop; shows the extra feet while Rushing.
+  const rush = actor.type === "character" ? RushHelper?.info(actor) : null;
+  snap.rush = rush;
+  if (snap.speed) {
+    snap.speed.display = rush?.active ? `${snap.speed.base} +${rush.feet}'` : snap.speed.base;
+  }
+
+  snap.featureActions = collectFeatureActions(actor, snap.level);
+  snap.statusEffects = collectStatusEffects(actor);
   return snap;
+}
+
+/** Every enabled Feature Action the desktop Features tab shows a button for
+ * (ancestry traits, class features up to the actor's level, perks), keyed
+ * by FeatureAction's own "<itemId>|<path>" key. FeatureAction.row() does
+ * the enabled/label/live-state read, so nothing here guesses at it. */
+function collectFeatureActions(actor, level) {
+  if (!FeatureAction) return {};
+  const out = {};
+  const add = (item, path, fallback) => {
+    const row = FeatureAction.row(actor, item, path, fallback);
+    if (!row) return;
+    out[row.key] = { label: row.label, active: row.active, count: row.count || "" };
+  };
+  for (const item of actor.items ?? []) {
+    if (item.type === "ancestry") {
+      (item.system.traits ?? []).forEach((t, i) => add(item, `traits.${i}.action`, t?.name ?? item.name));
+    } else if (item.type === "class") {
+      (item.system.levelFeatures ?? []).forEach((f, i) => {
+        if (level != null && (f?.level ?? 0) > level) return;
+        add(item, `levelFeatures.${i}.action`, f?.name ?? item.name);
+      });
+    } else if (item.type === "perk") {
+      add(item, "action", item.name);
+    }
+  }
+  return out;
+}
+
+/** Same filter as the desktop sheet's status-icon strip
+ * (ActorActions._prepareStatusEffects): enabled effects carrying one of
+ * CONFIG.statusEffects' ids. */
+function collectStatusEffects(actor) {
+  const valid = new Set((CONFIG.statusEffects ?? []).map((s) => s.id));
+  const out = {};
+  for (const effect of actor.effects ?? []) {
+    if (effect.disabled) continue;
+    if (!Array.from(effect.statuses ?? []).some((id) => valid.has(id))) continue;
+    out[effect.id] = { name: effect.name || "Unknown", value: "" };
+  }
+  return out;
 }
 
 // ---- where.custom predicates -------------------------------------------
@@ -83,17 +210,20 @@ export function isStashRelic(item) {
   return item.type === "equipment" && item.system.equipmentType === "relic";
 }
 
-function weaponSkillKeys() {
-  const VAG = CONFIG.VAGABOND ?? {};
-  return new Set((VAG.homebrew?.skills ?? []).filter((s) => s.isWeaponSkill).map((s) => s.key));
+function homebrewSkill(key) {
+  return (CONFIG.VAGABOND?.homebrew?.skills ?? []).find((s) => s.key === key);
 }
 
 export function isWeaponSkill(_subject, ctx) {
-  return weaponSkillKeys().has(ctx.key);
+  return !!homebrewSkill(ctx.key)?.isWeaponSkill;
 }
 
+/** The desktop Skills column lists every non-weapon skill PLUS the weapon
+ * skills flagged `showInSkillsList` (Brawl, Finesse — they double as
+ * regular checks), so those show in both mobile grids too. */
 export function isNonWeaponSkill(_subject, ctx) {
-  return !weaponSkillKeys().has(ctx.key);
+  const skill = homebrewSkill(ctx.key);
+  return !skill?.isWeaponSkill || !!skill.showInSkillsList;
 }
 
 // ---- invokes -------------------------------------------------------------
@@ -103,105 +233,116 @@ function localizedLabel(table, key) {
   return game.i18n.localize(VAG[table]?.[key] ?? key);
 }
 
+/** Saves and skills read the actor's persistent Favor / Hinder
+ * (system.favorHinder, set from the sheet's segmented control) and Check
+ * Mod inside RollHandler.roll() itself — same as the desktop sheet. */
 export async function rollSave(ctx) {
-  const { rollHandler } = await getHandlers(ctx.phoneApp);
+  const { rollHandler } = getHandlers(ctx.phoneApp);
   const label = localizedLabel("saves", ctx.key);
-  return rollHandler.roll(blankEvent(), { dataset: { roll: true, type: "save", key: ctx.key, label } });
+  return rollHandler.roll(fakeEvent(ctx.event), { dataset: { roll: true, type: "save", key: ctx.key, label } });
 }
 
 export async function rollSkill(ctx) {
-  const { rollHandler } = await getHandlers(ctx.phoneApp);
+  const { rollHandler } = getHandlers(ctx.phoneApp);
   const label = localizedLabel("skills", ctx.key);
-  return rollHandler.roll(blankEvent(), { dataset: { roll: true, type: "skill", key: ctx.key, label } });
+  return rollHandler.roll(fakeEvent(ctx.event), { dataset: { roll: true, type: "skill", key: ctx.key, label } });
 }
 
-/** Equipped row tap: weapons/alchemicals attack (forwarding shift/ctrl fast-
- * forward mods from the actual tap); everything else worn just unequips —
- * nothing else to "do" with worn armor from a quick-access tap. */
+/** Item row tap (Equipped / Inventory / Magic): the desktop sheet's own
+ * rollWeapon/useItem path — activateHandItem() draws a hand item into the
+ * hands first if needed, then attacks / toggles a light source / uses it.
+ * Items with no "Use" on desktop (armor, plain gear) open their action
+ * accordion instead of doing something the desktop sheet wouldn't. */
+async function activateItem(ctx) {
+  const { item, actor } = ctx;
+  if (itemHasUse && !itemHasUse(item)) {
+    return ctx.phoneApp._toggleAccordion?.(`${ctx.sectionId}:${item.id}`);
+  }
+  const { rollHandler } = getHandlers(ctx.phoneApp);
+  return activateHandItem({ actor, item, event: fakeEvent(ctx.event), rollHandler });
+}
+
 export async function equippedPress(ctx) {
-  const { EquipmentHelper } = globalThis.vagabond.utils;
-  const isAttack = EquipmentHelper.isWeapon(ctx.item) || EquipmentHelper.isAlchemical(ctx.item);
-  if (isAttack) {
-    const { rollHandler } = await getHandlers(ctx.phoneApp);
-    return rollHandler.rollWeapon(ctx.event, { dataset: { itemId: ctx.item.id } });
-  }
-  return EquipmentHelper.equipWithHandLimit(ctx.actor, ctx.item.id, "unequipped");
-}
-
-export async function castSpell(ctx) {
-  const { spellHandler } = await getHandlers(ctx.phoneApp);
-  return spellHandler.castSpell(blankEvent(), { dataset: { spellId: ctx.item.id } });
-}
-
-/** Shared by the Inventory/Magic row tap AND the "Use" action button inside
- * any item's expanded accordion (equipped, inventory, magic alike) — an
- * equipped attack item's Use action still attacks, matching what tapping
- * the row itself does; everything else "uses". */
-async function performUse(item, ctx) {
-  const { EquipmentHelper } = globalThis.vagabond.utils;
-  const { rollHandler } = await getHandlers(ctx.phoneApp);
-  const isAttack = EquipmentHelper.isWeapon(item) || EquipmentHelper.isAlchemical(item);
-  if (ctx.sectionId === "equipped" && isAttack) {
-    return rollHandler.rollWeapon(blankEvent(), { dataset: { itemId: item.id } });
-  }
-  return rollHandler.useItem(blankEvent(), { dataset: { itemId: item.id } });
+  return activateItem(ctx);
 }
 
 export async function useItem(ctx) {
-  return performUse(ctx.item, ctx);
+  return activateItem(ctx);
 }
 
-// ---- item action row (equipped / inventory / magic accordions) ----------
+export async function castSpell(ctx) {
+  const { spellHandler } = getHandlers(ctx.phoneApp);
+  return spellHandler.castSpell(fakeEvent(ctx.event), { dataset: { spellId: ctx.item.id } });
+}
 
-/** Mirrors vagabond's own inventory-handler.mjs showInventoryContextMenu —
- * same Use-visibility rule, same Equip/Unequip toggle, same Bind/Unbind for
- * bound-requiring relics, same Edit/Delete (with its own localized confirm
- * dialog) — rendered as an icon row inside the companion's long-press
- * accordion instead of a floating desktop-style ContextMenu. Real branching
- * (armor never "uses", gear only if consumable/two-handed) is exactly the
- * kind of logic the plan keeps out of the JSON `actions` vocabulary. */
-export function itemActions(item, itemCtx) {
-  const { actor } = itemCtx;
-  const { VagabondChatCard, EquipmentHelper } = globalThis.vagabond.utils;
-  const isItemEquipped = EquipmentHelper.isEquipped(item);
-  const isArmor = EquipmentHelper.isArmor(item);
-  const isGear = EquipmentHelper.isGear(item);
+// ---- resource pools with desktop side effects -------------------------
 
-  let showUse = true;
-  if (isArmor) showUse = false;
-  else if (isGear) showUse = item.system.isConsumable === true || (item.system.handsRequired ?? 0) > 0;
+/** Luck +/-: the sheet's own spendLuck (−1 posts the Luck-spent card,
+ * Shift = +1 posts the gain card; RAW the Luck stat is not a cap). */
+export async function adjustLuck(ctx) {
+  return sheetAction(ctx.actor, "_onSpendLuck", { shiftKey: ctx.vars?.delta > 0 });
+}
 
-  const actions = [];
-  if (showUse) {
-    actions.push({ icon: "fas fa-hand-sparkles", label: "Use", onSelect: () => performUse(item, itemCtx) });
-  }
-  actions.push({
-    icon: "fas fa-comment",
-    label: "Send to Chat",
-    onSelect: () => VagabondChatCard.gearUse(actor, item),
-  });
-  if (item.type === "equipment") {
-    actions.push({
-      icon: `fas fa-${isItemEquipped ? "times" : "check"}`,
-      label: isItemEquipped ? "Unequip" : "Equip",
-      onSelect: () => {
-        const newState = isItemEquipped ? "unequipped" : EquipmentHelper.defaultEquipState(item);
-        return EquipmentHelper.equipWithHandLimit(actor, item.id, newState);
-      },
+/** Studied Die +/-: −1 rolls the d6 and posts it, +1 adds a die (Shift). */
+export async function adjustStudiedDie(ctx) {
+  return sheetAction(ctx.actor, "_onSpendStudiedDie", { shiftKey: ctx.vars?.delta > 0 });
+}
+
+/** Check Mod +/-: left click +1, right click −1 on desktop. Reset to 0 by
+ * vagabond after the next roll. */
+export async function adjustCheckBonus(ctx) {
+  const down = ctx.vars?.delta < 0;
+  return sheetAction(ctx.actor, "_onModifyCheckBonus", { button: down ? 2 : 0, type: down ? "contextmenu" : "click" });
+}
+
+/** Speed label: take / end the Rush Action (RushHelper refuses when the
+ * actor can't Rush). */
+export async function toggleRush(ctx) {
+  return sheetAction(ctx.actor, "_onToggleRush", ctx.event);
+}
+
+/** XP label while a level is ready: the sheet's Level Up dialog. */
+export async function levelUp(ctx) {
+  const LevelUpDialog = globalThis.vagabond.applications?.LevelUpDialog;
+  if (LevelUpDialog) return new LevelUpDialog(ctx.actor).render(true);
+  return undefined;
+}
+
+/** Feature Action button: the sheet's own featureAction handler (runs the
+ * macro, ends a pure on/off action that's lit, opens the Alchemy lab for
+ * Catalyze / Mix). */
+export async function runFeatureAction(ctx) {
+  return sheetAction(ctx.actor, "_onFeatureAction", ctx.event, { actionKey: ctx.key });
+}
+
+/** Status chip: posts the status card to chat, like clicking its icon. */
+export async function statusToChat(ctx) {
+  return sheetAction(ctx.actor, "_onStatusClick", ctx.event, { effectId: ctx.key });
+}
+
+// ---- item / spell action rows (long-press accordions) ------------------
+
+/** Converts vagabond's ContextMenuHelper entries into the companion's
+ * action shape. A `stepper` entry (Quantity) becomes a +/- track in the
+ * accordion (see descriptor-engine buildItemEntry); disabled entries drop. */
+function fromMenuItems(menuItems) {
+  return menuItems
+    .filter((m) => m && m.enabled !== false)
+    .map((m) => {
+      if (m.stepper) {
+        return {
+          label: m.label,
+          stepper: { value: m.stepper.value, onDelta: (delta) => m.stepper.onChange(delta) },
+        };
+      }
+      return { icon: m.icon, label: m.label, onSelect: () => m.action?.() };
     });
-  }
-  if (item.system?.requiresBound) {
-    const isBound = item.system.bound === true;
-    actions.push({
-      icon: "fa-solid fa-diamond",
-      label: isBound ? "Unbind" : "Bind",
-      onSelect: () => item.update({ "system.bound": !isBound }),
-    });
-  }
-  actions.push({ icon: "fas fa-edit", label: "Edit", onSelect: () => item.sheet.render(true) });
-  actions.push({
+}
+
+function deleteAction(item) {
+  return {
     icon: "fas fa-trash",
-    label: "Delete",
+    label: game.i18n.localize("VAGABOND.ContextMenu.Delete"),
     onSelect: async () => {
       const confirmed = await foundry.applications.api.DialogV2.confirm({
         window: { title: game.i18n.format("VAGABOND.ContextMenu.DeleteItemTitle", { name: item.name }) },
@@ -211,6 +352,30 @@ export function itemActions(item, itemCtx) {
       });
       if (confirmed) await item.delete();
     },
+  };
+}
+
+/** Same entries as vagabond's inventory/Equipped right-click menu
+ * (InventoryHandler.showInventoryContextMenu): buildItemMenuItems() plus
+ * Delete. */
+export function itemActions(item, itemCtx) {
+  if (!buildItemMenuItems) return [deleteAction(item)];
+  const { rollHandler, equipmentHandler } = getHandlers(itemCtx.phoneApp);
+  const menu = buildItemMenuItems({
+    actor: itemCtx.actor,
+    item,
+    event: fakeEvent(),
+    rollHandler,
+    equipmentHandler,
   });
-  return actions;
+  return [...fromMenuItems(menu), deleteAction(item)];
+}
+
+/** Same entries as the favorited-spell / HUD spell right-click menu: Cast,
+ * Focus ⇄ Stop Focusing, Dismiss (while something is on the map), Open,
+ * Send to Chat, Favorite ⇄ Unfavorite. */
+export function spellActions(spell, itemCtx) {
+  if (!buildSpellMenuItems) return [];
+  const { spellHandler } = getHandlers(itemCtx.phoneApp);
+  return fromMenuItems(buildSpellMenuItems({ actor: itemCtx.actor, spell, event: fakeEvent(), spellHandler }));
 }

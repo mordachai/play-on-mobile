@@ -83,7 +83,22 @@ function validateSection(section, index, errors, seenIds) {
       section.entries.forEach((e, i) => {
         if (!e.key) errors.push(`${path}.entries[${i}] missing "key"`);
         if (e.value === undefined) errors.push(`${path}.entries[${i}] missing "value"`);
-        if (e.editable && !e.write) errors.push(`${path}.entries[${i}]: editable requires "write"`);
+        if (e.editable && !e.write && !e.deltaInvoke) {
+          errors.push(`${path}.entries[${i}]: editable requires "write" or "deltaInvoke"`);
+        }
+        if (e.deltaInvoke) validateInvoke(e.deltaInvoke, `${path}.entries[${i}].deltaInvoke`, errors);
+        if (e.invoke) validateInvoke(e.invoke, `${path}.entries[${i}].invoke`, errors);
+        if (e.options !== undefined) {
+          if (!Array.isArray(e.options) || !e.options.length) {
+            errors.push(`${path}.entries[${i}]: "options" must be a non-empty array`);
+          } else if (!e.write) {
+            errors.push(`${path}.entries[${i}]: "options" requires "write"`);
+          } else {
+            e.options.forEach((o, j) => {
+              if (o?.value === undefined) errors.push(`${path}.entries[${i}].options[${j}] missing "value"`);
+            });
+          }
+        }
       });
     }
   }
@@ -111,6 +126,12 @@ export function validateDescriptor(descriptor) {
   if (!Array.isArray(descriptor.sections) || !descriptor.sections.length) {
     errors.push('missing required non-empty "sections" array');
     return { errors };
+  }
+
+  if (descriptor.suppressApps !== undefined) {
+    if (!Array.isArray(descriptor.suppressApps) || descriptor.suppressApps.some((x) => typeof x !== "string")) {
+      errors.push('"suppressApps" must be an array of CSS selector strings');
+    }
   }
 
   const seenIds = new Set();

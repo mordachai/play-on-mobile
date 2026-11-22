@@ -9,6 +9,8 @@
     "selfPositioned": [".spell-cast-dialog"]
   },
 
+  "suppressApps": ["#vagabond-combat-carousel", ".vbd-hud"],
+
   "header": {
     "subtitle": [
       { "label": "Level", "value": "@snap.level" },
@@ -34,11 +36,35 @@
       "entries": [
         { "key": "health", "label": "HP", "value": "@snap.health.value", "max": "@snap.health.max", "write": "system.health.value", "min": 0, "editable": true },
         { "key": "fatigue", "label": "Fatigue", "value": "@snap.fatigue.value", "max": "@snap.fatigue.max", "write": "system.fatigue", "min": 0, "editable": true },
-        { "key": "mana", "label": "Mana", "value": "@snap.mana.current", "max": "@snap.mana.max", "write": "system.mana.current", "min": 0, "editable": true, "when": "@snap.mana" },
-        { "key": "speed", "label": "Speed", "value": "@snap.speed.base" },
-        { "key": "luck", "label": "Luck Pool", "value": "@snap.luck.current", "max": "@snap.luck.max", "write": "system.currentLuck", "min": 0, "editable": true, "when": "@snap.luck" },
-        { "key": "xp", "label": "XP", "value": "@system.attributes.xp", "max": "@system.attributes.xpRequired", "write": "system.attributes.xp", "min": 0, "editable": true }
+        { "key": "armor", "label": "Armor", "value": "@snap.armor" },
+        { "key": "mana", "label": "Mana", "value": "@snap.mana.current", "max": "@snap.mana.max", "write": "system.mana.current", "min": 0, "editable": true, "when": "@snap.mana.max" },
+        { "key": "speed", "label": "Speed", "value": "@snap.speed.display", "invoke": { "kind": "custom", "fn": "toggleRush" }, "pressWhen": "@snap.rush.canToggle", "active": "@snap.rush.active" },
+        { "key": "luck", "label": "Luck Pool", "value": "@snap.luck.current", "max": "@snap.luck.max", "editable": true, "deltaInvoke": { "kind": "custom", "fn": "adjustLuck" }, "when": "@snap.luck" },
+        { "key": "xp", "label": "XP", "value": "@system.attributes.xp", "max": "@system.attributes.xpRequired", "write": "system.attributes.xp", "min": 0, "editable": true, "invoke": { "kind": "custom", "fn": "levelUp" }, "pressWhen": "@snap.canLevelUp", "active": "@snap.canLevelUp" }
       ]
+    },
+
+    {
+      "id": "statuses",
+      "render": "check-grid",
+      "label": "Status",
+      "cssClass": "pom-grid-skills",
+      "source": "@snap.statusEffects",
+      "name": "@.name",
+      "value": "@.value",
+      "invoke": { "kind": "custom", "fn": "statusToChat" }
+    },
+
+    {
+      "id": "featureActions",
+      "render": "check-grid",
+      "label": "Actions",
+      "cssClass": "pom-grid-skills",
+      "source": "@snap.featureActions",
+      "name": "@.label",
+      "value": "@.count",
+      "active": "@.active",
+      "invoke": { "kind": "custom", "fn": "runFeatureAction" }
     },
 
     {
@@ -50,7 +76,8 @@
       "where": { "type": "equipment", "custom": "isEquipped" },
       "description": "@item.system.description",
       "invoke": { "kind": "custom", "fn": "equippedPress" },
-      "actions": [{ "custom": "itemActions" }]
+      "actions": [{ "custom": "itemActions" }],
+      "tracks": [{ "label": "Uses", "value": "@item.system.uses.value", "max": "@item.system.uses.max", "write": "system.uses.value" }]
     },
 
     {
@@ -62,7 +89,20 @@
       "where": { "type": "spell" },
       "description": "@item.system.description",
       "invoke": { "kind": "custom", "fn": "castSpell" },
+      "actions": [{ "custom": "spellActions" }],
       "badge": { "label": "Focus", "value": "@snap.focus.current", "max": "@snap.focus.max", "when": "@snap.focus" }
+    },
+
+    {
+      "id": "rollModifiers",
+      "render": "resources",
+      "hideIfEmpty": false,
+      "entries": [
+        { "key": "favorHinder", "label": "Favor / Hinder", "value": "@snap.favorHinder", "default": "none", "write": "system.favorHinder", "when": "@snap.hasFavorHinder",
+          "options": [{ "value": "hinder", "label": "Hinder" }, { "value": "none", "label": "None" }, { "value": "favor", "label": "Favor" }] },
+        { "key": "checkBonus", "label": "Check Mod", "value": "@snap.checkBonus", "editable": true, "deltaInvoke": { "kind": "custom", "fn": "adjustCheckBonus" } },
+        { "key": "studiedDice", "label": "Studied Dice", "value": "@snap.studiedDice", "editable": true, "deltaInvoke": { "kind": "custom", "fn": "adjustStudiedDie" } }
+      ]
     },
 
     {
@@ -110,6 +150,7 @@
       "description": "@item.system.description",
       "invoke": { "kind": "custom", "fn": "useItem" },
       "actions": [{ "custom": "itemActions" }],
+      "tracks": [{ "label": "Uses", "value": "@item.system.uses.value", "max": "@item.system.uses.max", "write": "system.uses.value" }],
       "badge": { "value": "@snap.slots.available", "max": "@snap.slots.max", "when": "@snap.slots" }
     },
 
@@ -123,7 +164,8 @@
       "qty": "@item.system.quantity",
       "description": "@item.system.description",
       "invoke": { "kind": "custom", "fn": "useItem" },
-      "actions": [{ "custom": "itemActions" }]
+      "actions": [{ "custom": "itemActions" }],
+      "tracks": [{ "label": "Uses", "value": "@item.system.uses.value", "max": "@item.system.uses.max", "write": "system.uses.value" }]
     },
 
     {

@@ -100,6 +100,19 @@ export function registerSettings() {
     default: true,
   });
 
+  // Skips a system's own Dice So Nice `showForRoll()` animation for rolls
+  // made from this device (see invokes.mjs's runtime wrapper) — client-scoped
+  // since a weak phone GPU making the physics animation slow/laggy is a
+  // per-player hardware fact, not a world rule. Off by default: it's a
+  // player opt-in trade-off (no animation) rather than a universal win.
+  // Controlled from the companion panel's own Settings tab — config: false.
+  game.settings.register(MODULE_ID, "skipDiceAnimation", {
+    scope: "client",
+    config: false,
+    type: Boolean,
+    default: false,
+  });
+
   // Touch has no hover, so an accidental double-tap on a token (e.g. two
   // quick taps meant as separate select/move actions) reads to core as a
   // double-click and opens the actor sheet on top of the companion panel.

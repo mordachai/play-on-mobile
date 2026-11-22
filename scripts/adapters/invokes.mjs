@@ -7,6 +7,7 @@
  * instance.
  */
 import { templateValue, getProperty } from "./resolve.mjs";
+import { MODULE_ID } from "../settings.mjs";
 
 function mergeEvent(mods = {}) {
   return {
@@ -17,6 +18,27 @@ function mergeEvent(mods = {}) {
   };
 }
 
+/** Runs `fn()` with `game.dice3d` hidden for its duration when the player
+ * has opted into "Skip Dice Animation" — a system's own roll method (e.g.
+ * XDZ's `_rollCheck`) typically does `if (!game.dice3d) return; await
+ * game.dice3d.showForRoll(...)` before posting its chat card, so hiding it
+ * here makes that a no-op instead of playing (and awaiting) the 3D physics
+ * animation. Local to this device only: `game.dice3d` is a per-client
+ * instance, so other players' own animations are unaffected. Held for the
+ * whole invoke rather than a single await since the animation call can sit
+ * anywhere inside the system's method. */
+async function withDice3dSuppressed(fn) {
+  const skip = typeof game !== "undefined" && game.settings?.get(MODULE_ID, "skipDiceAnimation") && game.dice3d;
+  if (!skip) return fn();
+  const prior = game.dice3d;
+  game.dice3d = null;
+  try {
+    return await fn();
+  } finally {
+    game.dice3d = prior;
+  }
+}
+
 /** Real side effects, used whenever the caller doesn't inject a runtime
  * override (tests do). Every method receives the already `{key}`-templated
  * invoke descriptor plus the resolved ctx (actor/item/entry/event). */
@@ -24,23 +46,25 @@ export const defaultRuntime = {
   async actorMethod(ctx, { path, args = [], options }) {
     const fn = getProperty(ctx.actor, path);
     if (typeof fn !== "function") throw new Error(`Actor has no method "${path}"`);
-    return fn.apply(ctx.actor, options !== undefined ? [...args, options] : args);
+    return withDice3dSuppressed(() => fn.apply(ctx.actor, options !== undefined ? [...args, options] : args));
   },
   async itemMethod(ctx, { path, args = [], options }) {
     const fn = getProperty(ctx.item, path);
     if (typeof fn !== "function") throw new Error(`Item has no method "${path}"`);
-    return fn.apply(ctx.item, options !== undefined ? [...args, options] : args);
+    return withDice3dSuppressed(() => fn.apply(ctx.item, options !== undefined ? [...args, options] : args));
   },
   async propMethod(ctx, { path, call, args = [], options }) {
     const owner = getProperty(ctx.actor, path) ?? ctx.actor;
     const fn = owner?.[call];
     if (typeof fn !== "function") throw new Error(`No method "${call}" at "${path}"`);
-    return fn.apply(owner, options !== undefined ? [...args, options] : args);
+    return withDice3dSuppressed(() => fn.apply(owner, options !== undefined ? [...args, options] : args));
   },
   async formula(ctx, { formula, flavor }) {
     const roll = new Roll(formula, ctx.actor.getRollData());
     await roll.evaluate();
-    return roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: ctx.actor }), flavor });
+    return withDice3dSuppressed(() =>
+      roll.toMessage({ speaker: ChatMessage.getSpeaker({ actor: ctx.actor }), flavor })
+    );
   },
   async update(ctx, { target, set }) {
     const doc = target === "item" ? ctx.item : ctx.actor;

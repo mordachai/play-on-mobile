@@ -106,3 +106,13 @@ test("validateDescriptor: toggle action requires path; custom action is opaque a
   const d2 = { formatVersion: 1, system: "test", sections: [{ id: "a", render: "fields", actions: [{ custom: "itemActions" }] }] };
   assert.deepEqual(validateDescriptor(d2).errors, []);
 });
+
+test("validateDescriptor: editable resource accepts deltaInvoke instead of write; options need write + values; suppressApps must be strings", () => {
+  const base = (entry, extra = {}) => ({ formatVersion: 1, system: "t", ...extra, sections: [{ id: "v", render: "resources", entries: [entry] }] });
+  assert.deepEqual(validateDescriptor(base({ key: "l", value: 1, editable: true, deltaInvoke: { kind: "custom", fn: "f" } })).errors, []);
+  assert.match(validateDescriptor(base({ key: "l", value: 1, editable: true })).errors[0], /write" or "deltaInvoke/);
+  assert.match(validateDescriptor(base({ key: "o", value: 1, options: [{ value: "a" }] })).errors[0], /"options" requires "write"/);
+  assert.match(validateDescriptor(base({ key: "o", value: 1, write: "x", options: [{ label: "A" }] })).errors[0], /missing "value"/);
+  assert.match(validateDescriptor(base({ key: "o", value: 1 }, { suppressApps: [1] })).errors[0], /suppressApps/);
+  assert.deepEqual(validateDescriptor(base({ key: "o", value: 1 }, { suppressApps: ["#a", ".b"] })).errors, []);
+});

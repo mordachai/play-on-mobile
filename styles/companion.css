@@ -1048,6 +1048,63 @@ body.pom-companion-mode .sheet.journal-entry .journal-header .title {
   order: 4;
 }
 
+/* Tappable resource label (descriptor entry `invoke` — e.g. vagabond's
+   Speed label takes / ends the Rush Action). Reset core's bare button look
+   so it still reads as the same label, just underlined as a tap target. */
+.pom-resource-label.pom-resource-press {
+  width: auto;
+  min-height: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  text-decoration: underline dotted;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Lit state: an on/off resource that's currently on (Rush taken), or a
+   check whose effect is running (a glowing feature action). */
+.pom-resource.pom-active,
+.pom-check.pom-active {
+  border-color: var(--pom-color-accent);
+  box-shadow: inset 0 0 0 1px var(--pom-color-accent);
+}
+
+/* Segmented choice (descriptor entry `options` — e.g. Favor / Hinder):
+   always full row width, so three tap targets never squeeze into one
+   half-width grid cell. */
+.pom-resource.pom-resource-options {
+  grid-column: 1 / -1;
+}
+
+.pom-segmented {
+  order: 3;
+  flex: 1 1 100%;
+  display: flex;
+  gap: 4px;
+}
+
+.pom-segmented .pom-segment {
+  flex: 1 1 0;
+  min-height: var(--pom-min-resource-btn);
+  padding: 0 0.25rem;
+  background: var(--pom-color-1);
+  border: var(--b-1);
+  border-radius: var(--pom-radius-btn);
+  color: var(--pom-color-1-text);
+  font-size: var(--pom-font-resource-value, 0.85rem);
+  white-space: normal;
+}
+
+.pom-segmented .pom-segment.active {
+  background: var(--pom-color-accent);
+  border-color: var(--pom-color-accent);
+  /* Fixed dark text: every theme's accent is a saturated mid-tone, and the
+     light-mode --pom-color-1 would put light text on it. */
+  color: #111;
+  font-weight: bold;
+}
+
 /* Section labels + checks (saves/skills/attack skills) */
 
 .pom-section-label {

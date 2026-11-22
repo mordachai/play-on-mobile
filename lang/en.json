@@ -33,6 +33,8 @@
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Pan Nib Sensitivity",
   "PLAYONMOBILE.Companion.Settings.FastRolls": "Fast Rolls",
   "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Skip a system's own roll-config dialog where possible. Only affects systems whose companion sheet declares a fast-forward shortcut.",
+  "PLAYONMOBILE.Companion.Settings.SkipDiceAnimation": "Skip Dice Animation",
+  "PLAYONMOBILE.Companion.Settings.SkipDiceAnimationHint": "Skip the 3D dice animation (Dice So Nice) for rolls made from this device. Only affects what you see here; other players still see it play. Speeds up rolling a lot on slower phones.",
   "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpen": "Block Double-Tap Sheet Open",
   "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpenHint": "Prevent a quick double-tap on a token from opening its actor sheet. Recommended on touch, where accidental double-taps are common.",
   "PLAYONMOBILE.Companion.Settings.LeaveTable": "Leave Table",

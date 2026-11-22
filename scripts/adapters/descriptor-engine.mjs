@@ -77,7 +77,27 @@ function buildResourceEntry(e, ctx) {
     value: resolveExpr(e.value, ctx),
     max: e.max != null ? resolveExpr(e.max, ctx) : undefined,
   };
-  if (e.editable && e.write) {
+  if (e.active) entry.active = !!resolveExpr(e.active, ctx);
+  // `options`: a small fixed choice written straight to one actor field,
+  // rendered as a segmented control instead of a value + steppers (a
+  // system's persistent roll-mode toggle, e.g. vagabond's Favor / Hinder).
+  if (Array.isArray(e.options) && e.write) {
+    const current = String(entry.value ?? e.default ?? "");
+    entry.options = e.options.map((o) => ({
+      value: String(o.value),
+      label: o.label ?? String(o.value),
+      selected: String(o.value) === current,
+    }));
+    entry.onOption = (value) => ctx.actor.update({ [e.write]: value });
+  }
+  // `deltaInvoke` routes the +/- buttons through the system's own logic
+  // instead of a plain clamp-and-write — for pools whose change has side
+  // effects on desktop (a chat card on spending Luck, a d6 rolled on
+  // spending a Studied Die). The invoke sees the step as `ctx.vars.delta`.
+  if (e.editable && e.deltaInvoke) {
+    entry.editable = true;
+    entry.onDelta = (delta) => runInvoke(e.deltaInvoke, { ...ctx, vars: { delta } });
+  } else if (e.editable && e.write) {
     entry.editable = true;
     entry.onDelta = (delta) => {
       const current = Number(getProperty(ctx.actor, e.write) ?? 0);
@@ -86,6 +106,14 @@ function buildResourceEntry(e, ctx) {
       const next = Math.min(maxVal, Math.max(min, current + delta));
       return ctx.actor.update({ [e.write]: next });
     };
+  }
+  // `invoke` makes the cell's label tappable (vagabond: Speed label takes /
+  // ends the Rush Action, XP label opens Level Up). `pressWhen` keeps it
+  // inert until it means something, so the label doesn't look tappable
+  // when a tap would do nothing.
+  if (e.invoke && (!e.pressWhen || resolveExpr(e.pressWhen, ctx))) {
+    entry.pressable = true;
+    entry.onPress = (mods) => runInvoke(e.invoke, { ...ctx, event: mods });
   }
   return entry;
 }
@@ -117,7 +145,12 @@ function buildKeyValueEntry(section, key, entry, ctx) {
   };
   if (section.abbr) out.abbr = resolveLabelFrom(section.abbr, key, ctx);
   if (section.labelFrom) out.label = resolveLabelFrom(section.labelFrom, key, ctx);
+  // `name`: per-entry label read off the entry itself, for sources whose
+  // keys are opaque ids rather than config-table keys (vagabond's feature
+  // actions are keyed "<itemId>|<path>", statuses by effect id).
+  else if (section.name) out.label = resolveExpr(section.name, entryCtx);
   else if (section.label !== undefined) out.label = section.label;
+  if (section.active) out.active = !!resolveExpr(section.active, entryCtx);
   if (section.invoke) {
     out.onPress = (mods) =>
       runInvoke(section.invoke, { ...entryCtx, event: mods, custom: ctx.custom, runtime: ctx.runtime });
@@ -268,7 +301,20 @@ async function buildItemEntry(section, item, ctx) {
     entry.onPress = (mods) =>
       runInvoke(section.invoke, { ...itemCtx, event: mods, custom: ctx.custom, runtime: ctx.runtime });
   }
-  entry.actions = buildItemActions(section, item, itemCtx, ctx);
+  const actions = buildItemActions(section, item, itemCtx, ctx).filter((a) => a && a.hidden !== true);
+  // A custom action may be a stepper (`{label, stepper: {value, onDelta}}`)
+  // rather than a button — vagabond's Quantity entry in its own item menu.
+  // Those join the row's `tracks` steppers instead of the icon row, so a
+  // system that builds its whole menu in code gets the same +/- control a
+  // JSON `tracks` entry would.
+  const steppers = actions.filter((a) => a.stepper);
+  entry.actions = actions.filter((a) => !a.stepper);
+  if (steppers.length) {
+    entry.qtyTracks = [
+      ...(entry.qtyTracks ?? []),
+      ...steppers.map((a) => ({ label: a.label, value: a.stepper.value, onDelta: a.stepper.onDelta })),
+    ];
+  }
   return entry;
 }
 

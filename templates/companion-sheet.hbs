@@ -70,9 +70,21 @@
       {{#if this.isResources}}
       <div class="pom-resource-substat-grid">
         {{#each this.entries}}
-        <div class="pom-resource" data-key="{{this.key}}">
+        <div class="pom-resource{{#if this.options}} pom-resource-options{{/if}}{{#if this.active}} pom-active{{/if}}" data-key="{{this.key}}">
+          {{#if this.pressable}}
+          <button type="button" class="pom-resource-label pom-resource-press" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}">{{this.label}}</button>
+          {{else}}
           <div class="pom-resource-label">{{this.label}}</div>
+          {{/if}}
+          {{#if this.options}}
+          <div class="pom-segmented">
+            {{#each this.options}}
+            <button type="button" class="pom-segment{{#if this.selected}} active{{/if}}" data-action="entryOption" data-section-id="{{../../id}}" data-entry-id="{{../id}}" data-value="{{this.value}}" aria-pressed="{{this.selected}}">{{this.label}}</button>
+            {{/each}}
+          </div>
+          {{else}}
           <div class="pom-resource-value">{{#if this.max}}{{this.value}}/{{this.max}}{{else}}{{this.value}}{{/if}}</div>
+          {{/if}}
           {{#if this.editable}}
           <div class="pom-resource-controls">
             <button type="button" data-action="entryDelta" data-section-id="{{../id}}" data-entry-id="{{this.id}}" data-delta="-1">&minus;</button>
@@ -88,7 +100,7 @@
       <h3 class="pom-section-label">{{this.label}}</h3>
       <div class="pom-check-grid {{this.cssClass}}">
         {{#each this.entries}}
-        <button type="button" class="pom-check" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}">
+        <button type="button" class="pom-check{{#if this.active}} pom-active{{/if}}" data-action="entryPress" data-section-id="{{../id}}" data-entry-id="{{this.id}}">
           <span class="pom-check-label">{{this.label}}</span><span class="pom-check-value">{{this.value}}</span>
         </button>
         {{/each}}
@@ -334,6 +346,12 @@
           <button type="button" class="pom-toggle {{#if fastRolls}}on{{/if}}" data-action="toggleFastRolls" aria-pressed="{{fastRolls}}"></button>
         </div>
         <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.FastRollsHint"}}</span>
+
+        <div class="pom-setting-row">
+          <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.SkipDiceAnimation"}}</span>
+          <button type="button" class="pom-toggle {{#if skipDiceAnimation}}on{{/if}}" data-action="toggleSkipDiceAnimation" aria-pressed="{{skipDiceAnimation}}"></button>
+        </div>
+        <span class="pom-setting-hint">{{localize "PLAYONMOBILE.Companion.Settings.SkipDiceAnimationHint"}}</span>
 
         <div class="pom-setting-row">
           <span class="pom-setting-label">{{localize "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpen"}}</span>

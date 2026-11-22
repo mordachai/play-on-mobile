@@ -33,6 +33,8 @@
   "PLAYONMOBILE.Companion.Settings.NibSensitivity": "Sensibilidade da Alça de Pan",
   "PLAYONMOBILE.Companion.Settings.FastRolls": "Rolagens Rápidas",
   "PLAYONMOBILE.Companion.Settings.FastRollsHint": "Pula a caixa de diálogo de configuração de rolagem do sistema, quando possível. Só afeta sistemas cuja ficha do companion declara um atalho de rolagem rápida.",
+  "PLAYONMOBILE.Companion.Settings.SkipDiceAnimation": "Pular Animação de Dados",
+  "PLAYONMOBILE.Companion.Settings.SkipDiceAnimationHint": "Pula a animação 3D dos dados (Dice So Nice) nas rolagens feitas neste dispositivo. Afeta só o que você vê aqui; os outros jogadores continuam vendo a animação normalmente. Deixa a rolagem bem mais rápida em celulares mais fracos.",
   "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpen": "Bloquear Abertura por Duplo Toque",
   "PLAYONMOBILE.Companion.Settings.BlockDoubleTapSheetOpenHint": "Evita que um duplo toque rápido em um token abra a ficha do personagem. Recomendado em telas de toque, onde duplos toques acidentais são comuns.",
   "PLAYONMOBILE.Companion.Settings.LeaveTable": "Sair da Mesa",

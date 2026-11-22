@@ -454,3 +454,117 @@ test("descriptor-engine: the raw descriptor is exposed on the adapter (e.g. for 
   assert.equal(adapter.descriptor, descriptor);
   assert.deepEqual(adapter.descriptor.fastForward, { event: { shiftKey: true } });
 });
+
+test("descriptor-engine: resource `options` marks the current choice (falling back to `default`) and writes the picked value", async () => {
+  const actor = makeActor();
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    sections: [
+      { id: "mods", render: "resources", entries: [
+        { key: "fh", label: "Favor / Hinder", value: "@system.favorHinder", default: "none", write: "system.favorHinder",
+          options: [{ value: "hinder", label: "Hinder" }, { value: "none", label: "None" }, { value: "favor", label: "Favor" }] },
+      ] },
+    ],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML });
+  let fh = (await adapter.buildSheetData({ actor })).sections[0].entries[0];
+  assert.deepEqual(fh.options.map((o) => o.selected), [false, true, false]); // unset -> default "none"
+
+  await fh.onOption("favor");
+  assert.equal(actor.system.favorHinder, "favor");
+  fh = (await adapter.buildSheetData({ actor })).sections[0].entries[0];
+  assert.deepEqual(fh.options.map((o) => o.selected), [false, false, true]);
+});
+
+test("descriptor-engine: resource `deltaInvoke` replaces the clamp-and-write with an invoke that sees vars.delta", async () => {
+  const actor = makeActor({ system: { luck: 2 } });
+  const seen = [];
+  const custom = { adjust: (ctx) => seen.push(ctx.vars.delta) };
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    invokeModule: "x.mjs",
+    sections: [
+      { id: "v", render: "resources", entries: [
+        { key: "luck", label: "Luck", value: "@system.luck", editable: true, deltaInvoke: { kind: "custom", fn: "adjust" } },
+      ] },
+    ],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML, importModule: async () => custom });
+  const luck = (await adapter.buildSheetData({ actor })).sections[0].entries[0];
+  assert.equal(luck.editable, true);
+  await luck.onDelta(-1);
+  await luck.onDelta(1);
+  assert.deepEqual(seen, [-1, 1]);
+  assert.equal(actor.updateCalls.length, 0); // nothing written by the engine itself
+});
+
+test("descriptor-engine: resource `invoke` is pressable only while `pressWhen` holds; `active` passes through", async () => {
+  const pressed = [];
+  const custom = { rush: () => pressed.push("rush") };
+  const build = async (canRush) => {
+    const actor = makeActor({ system: { canRush, rushing: canRush } });
+    const descriptor = {
+      formatVersion: 1,
+      system: "test",
+      invokeModule: "x.mjs",
+      sections: [
+        { id: "v", render: "resources", entries: [
+          { key: "speed", label: "Speed", value: 30, invoke: { kind: "custom", fn: "rush" },
+            pressWhen: "@system.canRush", active: "@system.rushing" },
+        ] },
+      ],
+    };
+    const adapter = createDescriptorAdapter(descriptor, { enrichHTML, importModule: async () => custom });
+    return (await adapter.buildSheetData({ actor })).sections[0].entries[0];
+  };
+  const off = await build(false);
+  assert.equal(off.pressable, undefined);
+  assert.equal(off.onPress, undefined);
+  assert.equal(off.active, false);
+
+  const on = await build(true);
+  assert.equal(on.pressable, true);
+  assert.equal(on.active, true);
+  await on.onPress({});
+  assert.deepEqual(pressed, ["rush"]);
+});
+
+test("descriptor-engine: check-grid `name` labels entries from the entry itself; `active` flags lit entries", async () => {
+  const actor = makeActor({ system: { actions: { "a1|x": { label: "Rage", active: true }, "a2|y": { label: "Mark", active: false } } } });
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    sections: [{ id: "acts", render: "check-grid", source: "@system.actions", name: "@.label", active: "@.active" }],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML });
+  const entries = (await adapter.buildSheetData({ actor })).sections[0].entries;
+  assert.deepEqual(entries.map((e) => [e.id, e.label, e.active]), [["a1|x", "Rage", true], ["a2|y", "Mark", false]]);
+});
+
+test("descriptor-engine: custom item actions carrying a `stepper` move into qtyTracks; `hidden` actions drop", async () => {
+  const actor = makeActor();
+  const deltas = [];
+  const custom = {
+    menu: () => [
+      { icon: "fas fa-a", label: "Use", onSelect() {} },
+      { label: "Quantity", stepper: { value: 3, onDelta: (d) => deltas.push(d) } },
+      { icon: "fas fa-b", label: "Secret", hidden: true, onSelect() {} },
+    ],
+  };
+  const descriptor = {
+    formatVersion: 1,
+    system: "test",
+    invokeModule: "x.mjs",
+    sections: [{ id: "inv", render: "item-list", where: { type: "weapon" }, actions: [{ custom: "menu" }] }],
+  };
+  const adapter = createDescriptorAdapter(descriptor, { enrichHTML, importModule: async () => custom });
+  const dagger = (await adapter.buildSheetData({ actor })).sections[0].entries.find((e) => e.id === "i2");
+  assert.deepEqual(dagger.actions.map((a) => a.label), ["Use"]);
+  assert.equal(dagger.qtyTracks.length, 1);
+  assert.equal(dagger.qtyTracks[0].label, "Quantity");
+  assert.equal(dagger.qtyTracks[0].value, 3);
+  dagger.qtyTracks[0].onDelta(-1);
+  assert.deepEqual(deltas, [-1]);
+});

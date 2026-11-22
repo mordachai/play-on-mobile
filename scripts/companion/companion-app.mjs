@@ -35,6 +35,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       switchTab: PhoneCompanionApp._onSwitchTab,
       entryPress: PhoneCompanionApp._onEntryPress,
       entryDelta: PhoneCompanionApp._onEntryDelta,
+      entryOption: PhoneCompanionApp._onEntryOption,
       entryAction: PhoneCompanionApp._onEntryAction,
       entryQtyDelta: PhoneCompanionApp._onEntryQtyDelta,
       rawRoll: PhoneCompanionApp._onRawRoll,
@@ -50,6 +51,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       setHandedness: PhoneCompanionApp._onSetHandedness,
       toggleNib: PhoneCompanionApp._onToggleNib,
       toggleFastRolls: PhoneCompanionApp._onToggleFastRolls,
+      toggleSkipDiceAnimation: PhoneCompanionApp._onToggleSkipDiceAnimation,
       toggleBlockDoubleTapSheetOpen: PhoneCompanionApp._onToggleBlockDoubleTapSheetOpen,
       toggleForeignSetting: PhoneCompanionApp._onToggleForeignSetting,
       openSettingsMenu: PhoneCompanionApp._onOpenSettingsMenu,
@@ -88,6 +90,12 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
 
     const onActorDoc = (doc) => this._onDocChange(doc);
     const onItemDoc = (doc) => this._onDocChange(doc.actor);
+    // Effects live on the actor or on one of its items (item-granted) —
+    // statuses, vagabond's Rush, toggled effects all show on the sheet.
+    const onEffectDoc = (doc) => {
+      const parent = doc.parent;
+      this._onDocChange(parent?.documentName === "Item" ? parent.actor : parent);
+    };
     const onCanvasEvent = () => this._scheduleRender();
 
     this._hooks = [
@@ -95,6 +103,9 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       ["updateItem", onItemDoc],
       ["createItem", onItemDoc],
       ["deleteItem", onItemDoc],
+      ["createActiveEffect", onEffectDoc],
+      ["updateActiveEffect", onEffectDoc],
+      ["deleteActiveEffect", onEffectDoc],
       ["createChatMessage", onCanvasEvent],
       ["updatePlaylist", onCanvasEvent],
       ["updatePlaylistSound", onCanvasEvent],
@@ -208,6 +219,7 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
       // toggle that quietly does nothing for the current system is more
       // confusing than one that's always visible.
       fastRolls: game.settings.get(MODULE_ID, "fastRolls"),
+      skipDiceAnimation: game.settings.get(MODULE_ID, "skipDiceAnimation"),
       // Also registered config:true (see settings.mjs) so it still shows in
       // Foundry's own Configure Settings menu for the GM — duplicated here,
       // not moved, so a mobile player (no sidebar access, see
@@ -674,6 +686,15 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
     entry?.onDelta?.(Number(delta));
   }
 
+  /** Segmented-choice resource entry (descriptor `options`) — writes the
+   * tapped option's value; re-render arrives through the updateActor hook. */
+  static _onEntryOption(_event, target) {
+    const { sectionId, entryId, value } = target.dataset;
+    const section = this._data?.sections?.find((s) => s.id === sectionId);
+    const entry = section?.entries?.find((e) => e.id === entryId);
+    entry?.onOption?.(value);
+  }
+
   /** item-list's own per-track stepper (ammo/secondary/damaged, etc.) — same
    * clamp-and-write shape as _onEntryDelta above, but item-scoped
    * (descriptor's `tracks`) rather than actor-scoped, and indexed since a
@@ -776,6 +797,11 @@ export class PhoneCompanionApp extends HandlebarsApplicationMixin(ApplicationV2)
 
   static _onToggleFastRolls(_event, _target) {
     game.settings.set(MODULE_ID, "fastRolls", !game.settings.get(MODULE_ID, "fastRolls"));
+    this.render();
+  }
+
+  static _onToggleSkipDiceAnimation(_event, _target) {
+    game.settings.set(MODULE_ID, "skipDiceAnimation", !game.settings.get(MODULE_ID, "skipDiceAnimation"));
     this.render();
   }
 
